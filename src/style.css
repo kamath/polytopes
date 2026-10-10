@@ -51,6 +51,9 @@ canvas.grab:active{cursor:grabbing}
 .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:14px}
 .ctl label,.k{font-size:13px;color:var(--muted)}
 .ctl input[type=range]{flex:1 1 160px;min-width:0;margin:0;accent-color:var(--fg)}
+.ctl .chk{display:inline-flex;align-items:center;gap:6px;color:var(--fg);cursor:pointer}
+.ctl .chk input{margin:0;accent-color:var(--fg)}
+.fig.adv canvas{touch-action:none}
 .btn{font:inherit;font-size:13px;line-height:1.4;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:4px 10px;cursor:pointer}
 .btn:hover{border-color:var(--faint)}
 .btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}

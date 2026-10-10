@@ -44,6 +44,12 @@ function raw(){if(_raw)return _raw;const f=PHI,q=1/Math.sqrt(5);
   const v8=orbitPts([1,1,1,1]),v16=orbitPts([1,0,0,0]),v24=orbitPts([1,1,0,0]);
   return _raw={5:[v5,v5.map(v=>v.map(x=>-x))],8:[v8,v16],16:[v16,v8],24:[v24,[...v16,...v8]],120:[v120,v600],600:[v600,v120]};}
 function polytope(k){const[v,d]=raw()[k],P=build(v);P.cells=cellsOf(P.V,d);return P;}
+// the 2D faces of a 4D polytope: wherever two cells share three or more corners, walked into a ring along the edges
+function faces(P){const nb=P.V.map(()=>new Set()),at=P.V.map(()=>[]),F=[];P.E.forEach(e=>{nb[e[0]].add(e[1]);nb[e[1]].add(e[0]);});
+  P.cells.forEach((c,i)=>c.forEach(v=>at[v].push(i)));
+  P.cells.forEach((c,i)=>{const sh=new Map();for(const v of c)for(const j of at[v])if(j>i){if(!sh.has(j))sh.set(j,[]);sh.get(j).push(v);}
+    for(const s of sh.values())if(s.length>2){const r=[s[0]];for(let p=-1,v=s[0];r.length<s.length;){const n=s.find(x=>x!=p&&nb[v].has(x));r.push(n);p=v;v=n;}F.push(r);}});
+  return F;}
 // the five Platonic solids by Schläfli symbol; each face is a ring of vertex indices, found from the dual's corners
 const signs=v=>{let o=[[]];for(const x of v)o=o.flatMap(p=>x?[[...p,x],[...p,-x]]:[[...p,0]]);return o;};
 const cyc=v=>[0,1,2].flatMap(s=>signs([v[s],v[(s+1)%3],v[(s+2)%3]]));
@@ -53,4 +59,4 @@ function solid(k){const vT=[[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]],vC=signs([1,1
     w=[n[1]*u[2]-n[2]*u[1],n[2]*u[0]-n[0]*u[2],n[0]*u[1]-n[1]*u[0]],ang=a=>Math.atan2(dot(r(a),w),dot(r(a),u));return idx.slice().sort((a,b)=>ang(a)-ang(b));});
   return{V,E:P.E,F};}
 
-export{dot,corners,cubeEdges,quads,net,cut,ring2,cutCells,polytope,solid};
+export{dot,corners,cubeEdges,quads,net,cut,ring2,cutCells,polytope,faces,solid};

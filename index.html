@@ -26,6 +26,12 @@
       <button class="btn" data-d="3" type="button" aria-pressed="true">turns its shadow</button>
       <button class="btn" data-d="4" type="button" aria-pressed="false">turns it in 4D</button>
     </div>
+    <button class="btn" id="viz-adv" type="button" aria-pressed="false" aria-controls="viz-advrow">Advanced</button>
+  </div>
+  <div class="ctl" id="viz-advrow" hidden>
+    <label class="chk"><input type="checkbox" id="viz-solid"> Solid faces</label>
+    <button class="btn" id="viz-reset" type="button">Reset view</button>
+    <span class="k">Scroll or pinch to zoom. Shift-drag or two fingers to move the view.</span>
   </div>
   <p class="out" id="viz-out"></p>
 </figure>
