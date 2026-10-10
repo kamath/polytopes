@@ -11,7 +11,7 @@ const SOLID=[
 const TOPE=[
   {k:5,name:'5-cell',cell:'3,3',r:3},{k:16,name:'16-cell',cell:'3,3',r:4},{k:600,name:'600-cell',cell:'3,3',r:5},
   {k:24,name:'24-cell',cell:'3,4',r:3},{k:8,name:'Tesseract',cell:'4,3',r:3},{k:120,name:'120-cell',cell:'5,3',r:3}];
-const cvs=$('#viz').querySelectorAll('canvas'),out=$('#viz-out'),playBtn=$('#viz-play'),cache={};
+const cvs=$('#viz .shapes').querySelectorAll('canvas'),out=$('#viz-out'),playBtn=$('#viz-play'),cache={};
 let sol=SOLID[3],tope=TOPE[4],G3,S3,P4,hi=[],fill4=null,play=!RM,drag4=false,ang=0,adv=false,solidOn=false;
 const faceOf=s=>POLY.find(x=>x.p==+s.s[0]);
 // the 4D shape starts a little turned; rows of M are where each screen axis reads from
@@ -45,8 +45,8 @@ const f4=mk(cvs[2],(f,ts)=>{const d=dt(f,ts);
 pull(f4,(dx,dy)=>{if(drag4){turn(0,3,dx*.01);turn(1,3,dy*.01);}else{f4.yaw+=dx*.01;f4.pitch=Math.max(-1.5,Math.min(1.5,f4.pitch+dy*.01));}});
 
 // ---------- Build: one flat shape, copies of it folded up into the solid, copies of the solid folded up into the 4D shape, and back ----------
-const bInp=$('#build-t'),bOut=$('#build-out'),bBtn=$('#build-play');
-let NB,bKey,bt=0,bplay=!RM,bStage='',sway=0,by=.5,bp=.3;
+const bInp=$('#build-t'),bOut=$('#build-out');
+let NB,bKey,bt=0,bStage='',sway=0,by=.5,bp=.3;
 const ramp=(x,a,b)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 // both nets in one frame: the first face lies flat on the screen, the first cell lies in our space, and w is the way the cells fold
 function nets(){
@@ -71,7 +71,7 @@ const say=st=>{const face=faceOf(sol),A=n=>(/^[IO]/.test(n)?'An':/^\d/.test(n)?'
     foldB:()=>lab('3D → 4D','Folded up through the fourth direction until their faces meet, '+tope.r+' around each edge. We only see the shadow. Watch the blue one.'),
     tope:()=>lab('4D',A(tope.name)+': '+nc+' '+sol.pl+'. '+(NB.TB[NB.far].dep>1?'The blue one swung furthest, right round to the far side. It is nearest the lamp, so its shadow is the biggest.':'The blue one is one of the '+(nc-1)+' that folded up.'))}[st]();};
 const fb=mk($('#build canvas'),(f,ts)=>{const d=Math.min(50,ts-(f.last||ts)),max=+bInp.max,c=f.ctx;f.last=ts;
-  if(bplay){bt=(bt+d*.0002)%max;bInp.value=bt;sway+=d*.0004;}
+  if(play){bt=(bt+d*.0002)%max;bInp.value=bt;sway+=d*.0004;}
   const s=bt>max/2?max-bt:bt,inB=s>1,x=inB?s-1:s,T=inB?NB.TB:NB.TA,g=ramp(x,.1,.36),
     tilt=inB?1:ramp(x,.42,.75),u=ramp(x,.5,.9),L=fold(T,u),off=[],P3=[];
   const st=inB?(x<.08?'solid':x<.46?'netB':x<.92?'foldB':'tope'):(x<.08?'one':x<.46?'netA':x<.9?'foldA':'solid');if(st!=bStage)say(bStage=st);
@@ -95,13 +95,11 @@ const fb=mk($('#build canvas'),(f,ts)=>{const d=Math.min(50,ts-(f.last||ts)),max
   if(inB){grey(i=>!i,al);c.fillStyle=K.accent;c.globalAlpha=.09*g;for(const r of NB.farF){c.beginPath();poly(off[far],r);if(g>0)c.fill();}
     c.beginPath();for(const r of NB.farF)poly(off[far],r);ink(K.accent,g,1.8);}
   c.beginPath();poly(0,ring);ink(K.accent,hand,1.8);
-  c.globalAlpha=1;},{anim:bplay});
+  c.globalAlpha=1;},{anim:play});
 pull(fb,(dx,dy)=>{by+=dx*.01;bp=Math.max(-1.5,Math.min(1.5,bp+dy*.01));});
-const bSync=()=>{bBtn.textContent=bplay?'Pause':'Play';fb.anim=bplay;fb.last=0;};
-bBtn.addEventListener('click',()=>{bplay=!bplay;bSync();});bSync();
 bInp.addEventListener('input',()=>{bt=+bInp.value;fb.dirty=true;});
 // grabbing the slider hands control to the reader
-const bHold=()=>{if(bplay){bplay=false;bSync();}};bInp.addEventListener('pointerdown',bHold);bInp.addEventListener('keydown',bHold);
+const bHold=()=>{if(play){play=false;syncPlay();}};bInp.addEventListener('pointerdown',bHold);bInp.addEventListener('keydown',bHold);
 
 const lab=(tag,name,sym)=>'<span class="tag">'+tag+'</span>'+name+(sym?' <code>{'+sym+'}</code>':'');
 const bar=(el,items,on,ok,pick)=>{el.innerHTML=items.map((it,i)=>'<button class="btn'+(ok(it)?'':' off')+'" type="button" data-i="'+i+'" aria-pressed="'+(it===on)+'">'+it.name+'</button>').join('');
@@ -113,9 +111,9 @@ function show(){
   P4=tope?cache[tope.k]||(cache[tope.k]=polytope(tope.k)):null;hi=[];fill4=null;
   if(P4){const C=new Set(P4.cells[0]);for(const e of P4.E)if(C.has(e[0])&&C.has(e[1]))hi.push([e[0],e[1],0]);
     if(solidOn){const F=P4.F||(P4.F=faces(P4));fill4={F,M:F.filter(r=>r.every(v=>C.has(v)))};}}
-  $('#viz-l2').innerHTML=lab('2D',face.name,face.p);
-  $('#viz-l3').innerHTML=lab('3D',sol.name,sol.s);
-  $('#viz-l4').innerHTML=tope?lab('4D',tope.name,tope.cell+','+tope.r):lab('4D','Nothing');
+  $('#viz-l2').innerHTML='<code>{'+face.p+'}</code>';
+  $('#viz-l3').innerHTML='<code>{'+sol.s+'}</code>';
+  $('#viz-l4').innerHTML=tope?'<code>{'+tope.cell+','+tope.r+'}</code>':'';
   bar($('#viz-b2'),POLY,face,()=>true,x=>pickSolid(SOLID.find(s=>+s.s[0]==x.p)));
   bar($('#viz-b3'),SOLID,sol,s=>faceOf(s)===face,pickSolid);
   bar($('#viz-b4'),TOPE,tope,t=>t.cell==sol.s,t=>{tope=t;sol=SOLID.find(s=>s.s==t.cell);show();});
@@ -127,7 +125,7 @@ function show(){
   bStage='';[f2,f3,f4,fb].forEach(f=>f.dirty=true);
 }
 function pickSolid(s){sol=s;tope=TOPE.find(t=>t.cell==s.s)||null;show();}
-const syncPlay=()=>{playBtn.textContent=play?'Pause':'Play';[f2,f3,f4].forEach(f=>{f.anim=play;f.last=0;});};
+const syncPlay=()=>{playBtn.textContent=play?'Pause':'Play';[f2,f3,f4,fb].forEach(f=>{f.anim=play;f.last=0;});};
 playBtn.addEventListener('click',()=>{play=!play;syncPlay();});syncPlay();
 seg([...$('#viz-drag').querySelectorAll('button')],b=>{drag4=b.dataset.d=='4';});
 // advanced mode: filled faces and a movable view; leaving it puts both back

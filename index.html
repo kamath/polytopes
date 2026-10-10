@@ -10,40 +10,50 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 </head>
 <body>
-<main class="wide">
-<h1>Polytopes</h1>
-<p class="meta">A flat shape, the solid built from it, and the 4D shape built from that solid. Drag any of them to turn it. <a href="explainer.html">What am I looking at?</a></p>
+<main class="wide app">
 <figure class="fig" id="viz">
-  <div class="tri">
-    <div><div class="cv"><canvas role="img" aria-label="The flat shape"></canvas></div><p class="lab" id="viz-l2"></p><div class="seg" id="viz-b2" role="group" aria-label="Flat shape"></div></div>
-    <div><div class="cv"><canvas role="img" aria-label="The solid built from the flat shape"></canvas></div><p class="lab" id="viz-l3"></p><div class="seg" id="viz-b3" role="group" aria-label="Solid"></div></div>
-    <div class="last"><div class="cv"><canvas role="img" aria-label="The solid shadow of the 4D shape built from the solid"></canvas></div><p class="lab" id="viz-l4"></p><div class="seg" id="viz-b4" role="group" aria-label="4D shape"></div></div>
-  </div>
-  <div class="ctl">
-    <button class="btn" id="viz-play" type="button" aria-pressed="false">Pause</button>
-    <span class="k">Dragging the 4D shape</span>
-    <div class="seg" id="viz-drag" role="group" aria-label="Dragging the 4D shape">
-      <button class="btn" data-d="3" type="button" aria-pressed="true">turns its shadow</button>
-      <button class="btn" data-d="4" type="button" aria-pressed="false">turns it in 4D</button>
+  <div class="bar">
+    <div>
+      <h1>Polytopes</h1>
+      <p class="meta">A flat shape, the solid built from it, and the 4D shape built from that solid. Drag any of them to turn it. <a href="explainer.html">What am I looking at?</a><span class="advonly"> Scroll or pinch to zoom. Shift-drag or two fingers to move the view.</span></p>
     </div>
-    <button class="btn" id="viz-adv" type="button" aria-pressed="false" aria-controls="viz-advrow">Advanced</button>
+    <div class="ctl">
+      <div class="ctl" id="viz-advrow" hidden>
+        <label class="chk"><input type="checkbox" id="viz-solid"> Solid faces</label>
+        <button class="btn" id="viz-reset" type="button">Reset view</button>
+      </div>
+      <button class="btn" id="viz-adv" type="button" aria-pressed="false" aria-controls="viz-advrow">Advanced</button>
+      <button class="btn" id="viz-play" type="button">Pause</button>
+    </div>
   </div>
-  <div class="ctl" id="viz-advrow" hidden>
-    <label class="chk"><input type="checkbox" id="viz-solid"> Solid faces</label>
-    <button class="btn" id="viz-reset" type="button">Reset view</button>
-    <span class="k">Scroll or pinch to zoom. Shift-drag or two fingers to move the view.</span>
+  <div class="tri pick">
+    <div class="col"><span class="tag">2D</span><div class="seg" id="viz-b2" role="group" aria-label="Flat shape"></div></div>
+    <div class="col"><span class="tag">3D</span><div class="seg" id="viz-b3" role="group" aria-label="Solid"></div></div>
+    <div class="col last"><span class="tag">4D</span><div class="seg" id="viz-b4" role="group" aria-label="4D shape"></div></div>
   </div>
-  <p class="out" id="viz-out"></p>
-</figure>
-<h2>How each one is built from the last</h2>
-<figure class="fig" id="build">
-  <div class="cv wide"><canvas role="img" aria-label="Copies of the flat shape folding up into the solid, then copies of the solid folding up into the 4D shape, and back"></canvas></div>
-  <p class="lab" id="build-out"></p>
-  <div class="ctl">
-    <button class="btn" id="build-play" type="button">Pause</button>
-    <input type="range" id="build-t" min="0" max="4" step="any" value="0" aria-label="Build, from flat shape to 4D shape and back">
+  <div class="tri shapes">
+    <div class="cv"><canvas role="img" aria-label="The flat shape"></canvas><span class="sym" id="viz-l2"></span></div>
+    <div class="cv"><canvas role="img" aria-label="The solid built from the flat shape"></canvas><span class="sym" id="viz-l3"></span></div>
+    <div class="cv last"><canvas role="img" aria-label="The solid shadow of the 4D shape built from the solid"></canvas><span class="sym" id="viz-l4"></span></div>
   </div>
-  <div class="ticks" id="build-ticks" aria-hidden="true"></div>
+  <div class="tri note">
+    <p class="out" id="viz-out"></p>
+    <div class="ctl last">
+      <span class="k">Drag</span>
+      <div class="seg" id="viz-drag" role="group" aria-label="Dragging the 4D shape">
+        <button class="btn" data-d="3" type="button" aria-pressed="true">turns its shadow</button>
+        <button class="btn" data-d="4" type="button" aria-pressed="false">turns it in 4D</button>
+      </div>
+    </div>
+  </div>
+  <div id="build">
+    <div class="cv wide"><canvas role="img" aria-label="Copies of the flat shape folding up into the solid, then copies of the solid folding up into the 4D shape, and back"></canvas></div>
+    <p class="lab" id="build-out"></p>
+    <div class="ctl">
+      <input type="range" id="build-t" min="0" max="4" step="any" value="0" aria-label="Build, from flat shape to 4D shape and back">
+    </div>
+    <div class="ticks" id="build-ticks" aria-hidden="true"></div>
+  </div>
 </figure>
 </main>
 <script type="module" src="/src/home.js"></script>

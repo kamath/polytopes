@@ -59,13 +59,41 @@ canvas.grab:active{cursor:grabbing}
 .btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .btn:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .seg{display:flex;flex-wrap:wrap;gap:4px}
-.tri .seg{margin-top:8px}
 .btn.off:not([aria-pressed="true"]){color:var(--faint)}
 .ticks{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
 .out{font-size:14px;line-height:1.5;margin:12px 0 0;font-variant-numeric:tabular-nums}
 .out b{font-weight:600}
 #build .lab{min-height:2.9em;margin-top:10px}
 #build .lab b{color:var(--fg);font-weight:600}
+
+/* Home: the whole page is one panel. On a screen with room for it, the panel fills the viewport and the canvases share whatever height is left. */
+main.app{padding-block:20px}
+.app .fig{margin:0}
+.app h1{font-size:20px;margin:0}
+.app .meta{margin:2px 0 0}
+.app .meta a{white-space:nowrap}
+.app .tri{gap:8px 16px}
+.bar{display:flex;align-items:flex-start;justify-content:space-between;gap:10px 24px;margin-bottom:18px}
+.bar>div:first-child{flex:1;min-width:0}
+.bar .ctl{margin:0;flex:none}
+#viz:not(.adv) .advonly{display:none}
+.app .pick{align-items:end}
+.pick .col{display:flex;align-items:baseline;min-width:0}
+.shapes{margin-top:8px}
+.sym{position:absolute;left:8px;bottom:6px;font-size:12px;pointer-events:none}
+.note{margin-top:10px;align-items:center}
+.note .out{grid-column:span 2;margin:0}
+.note .ctl{margin:0}
+#build{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+#build .ctl{margin-top:6px}
+@media (min-width:860px) and (min-height:620px){
+  main.app{max-width:1600px;height:100dvh;padding-block:16px;display:flex;flex-direction:column}
+  .app .fig{flex:1;min-height:0;display:flex;flex-direction:column;padding:20px 24px}
+  .app .cv{flex:1 1 0;min-height:0;aspect-ratio:auto}
+  .app .shapes{flex:9 1 0;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch}
+  #build{flex:11 1 0;min-height:0;display:flex;flex-direction:column}
+}
+@media (min-width:1100px) and (min-height:620px){#build .lab{min-height:1.45em}}
 
 .fit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start}
 .fit svg{display:block;width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:6px}
@@ -94,6 +122,8 @@ canvas.grab:active{cursor:grabbing}
   .duo{grid-template-columns:minmax(0,2fr) minmax(0,3fr)}
   .tri{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .tri .last{grid-column:1 / -1}
+  .bar{flex-wrap:wrap}
+  .bar>div:first-child{flex-basis:100%}
   .cv.wide{aspect-ratio:4/3}
   .fit,.six{grid-template-columns:minmax(0,1fr)}
 }
