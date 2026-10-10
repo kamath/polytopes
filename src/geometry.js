@@ -59,4 +59,25 @@ function solid(k){const vT=[[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]],vC=signs([1,1
     w=[n[1]*u[2]-n[2]*u[1],n[2]*u[0]-n[0]*u[2],n[0]*u[1]-n[1]*u[0]],ang=a=>Math.atan2(dot(r(a),w),dot(r(a),u));return idx.slice().sort((a,b)=>ang(a)-ang(b));});
   return{V,E:P.E,F};}
 
-export{dot,corners,cubeEdges,quads,net,cut,ring2,cutCells,polytope,faces,solid};
+// a net: the pieces (corner lists) as a tree from piece 0, each hinged to its parent on the k or more corners they share
+// a points from the hinge into the piece, b is the way it swings to lie flat beside its parent, th is how far it swings
+function hinge(V,pieces,E,k){
+  const n=V[0].length,N=V.length,cen=ids=>{const c=Array(n).fill(0);for(const i of ids)for(let d=0;d<n;d++)c[d]+=V[i][d]/ids.length;return c;},
+    unit=v=>{const L=Math.hypot(...v);return v.map(x=>x/L);},at=V.map(()=>[]),ES=new Set(E.map(e=>e[0]*N+e[1])),
+    node=(i,o)=>{const v=pieces[i],e=[];v.forEach((x,a)=>v.forEach((y,b)=>{if(ES.has(x*N+y))e.push([a,b]);}));return Object.assign({i,v,E:e},o);};
+  pieces.forEach((p,i)=>p.forEach(v=>at[v].push(i)));
+  const C=pieces.map(cen),T=[node(0,{par:-1,dep:0})],seen=new Set([0]);
+  for(let q=0;q<T.length;q++){const P=T[q],sh=new Map();
+    for(const v of P.v)for(const j of at[v])if(!seen.has(j)){if(!sh.has(j))sh.set(j,[]);sh.get(j).push(v);}
+    for(const[j,s]of sh)if(s.length>=k){seen.add(j);const h=cen(s),a=unit(C[j].map((x,d)=>x-h[d])),p=unit(C[P.i].map((x,d)=>x-h[d])),ap=dot(a,p);
+      T.push(node(j,{par:q,dep:P.dep+1,h,a,b:unit(p.map((x,d)=>ap*a[d]-x)),th:Math.PI-Math.acos(ap)}));}}
+  T.V=V;return T;}
+// where the corners of every piece of a net are: u folds it from flat (0) to closed (1)
+function fold(T,u){const V=T.V,n=V[0].length,I=V[0].map((_,i)=>V[0].map((_,j)=>+(i==j))),lin=(R,v)=>I.map((_,d)=>{let s=0;for(let k=0;k<n;k++)s+=v[k]*R[k][d];return s;});
+  return T.map((N,q)=>{
+    if(!q){N.R=I;N.t=Array(n).fill(0);return N.v.map(i=>V[i]);}
+    const P=T[N.par],{a,b,h}=N,ph=(1-u)*N.th,c=Math.cos(ph)-1,s=Math.sin(ph),rot=v=>{const x=dot(a,v),y=dot(b,v);return v.map((z,d)=>z+c*(a[d]*x+b[d]*y)+s*(b[d]*x-a[d]*y));},rh=rot(h);
+    N.R=I.map(e=>lin(P.R,rot(e)));N.t=lin(P.R,h.map((z,d)=>z-rh[d])).map((z,d)=>z+P.t[d]);
+    return N.v.map(i=>lin(N.R,V[i]).map((z,d)=>z+N.t[d]));});}
+
+export{dot,corners,cubeEdges,quads,net,cut,ring2,cutCells,polytope,faces,solid,hinge,fold};

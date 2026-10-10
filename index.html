@@ -35,6 +35,16 @@
   </div>
   <p class="out" id="viz-out"></p>
 </figure>
+<h2>How each one is built from the last</h2>
+<figure class="fig" id="build">
+  <div class="cv wide"><canvas role="img" aria-label="Copies of the flat shape folding up into the solid, then copies of the solid folding up into the 4D shape, and back"></canvas></div>
+  <p class="lab" id="build-out"></p>
+  <div class="ctl">
+    <button class="btn" id="build-play" type="button">Pause</button>
+    <input type="range" id="build-t" min="0" max="4" step="any" value="0" aria-label="Build, from flat shape to 4D shape and back">
+  </div>
+  <div class="ticks" id="build-ticks" aria-hidden="true"></div>
+</figure>
 </main>
 <script type="module" src="/src/home.js"></script>
 </body>

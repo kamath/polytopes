@@ -1,6 +1,6 @@
 import './style.css';
-import{dot,polytope,faces,solid}from './geometry.js';
-import{$,RM,K,mk,paint,solid3,seg,shadow4,start}from './canvas.js';
+import{dot,polytope,faces,solid,hinge,fold}from './geometry.js';
+import{$,RM,K,mk,proj,fit,paint,solid3,seg,shadow4,start}from './canvas.js';
 
 // ---------- Visualizer: a polygon, the solid built from it, the 4D shape built from that solid ----------
 // blue marks the piece from one dimension down: one face of the solid, one cell of the 4D shape
@@ -44,6 +44,57 @@ const f4=mk(cvs[2],(f,ts)=>{const d=dt(f,ts);
   turn(0,3,d*.00022);turn(1,2,d*.00009);shadow4(f,P4,v=>M.map(r=>dot(r,v)),hi,null,fill4);},{R:1.6,yaw:.4,pitch:.3,anim:play});
 pull(f4,(dx,dy)=>{if(drag4){turn(0,3,dx*.01);turn(1,3,dy*.01);}else{f4.yaw+=dx*.01;f4.pitch=Math.max(-1.5,Math.min(1.5,f4.pitch+dy*.01));}});
 
+// ---------- Build: one flat shape, copies of it folded up into the solid, copies of the solid folded up into the 4D shape, and back ----------
+const bInp=$('#build-t'),bOut=$('#build-out'),bBtn=$('#build-play');
+let NB,bKey,bt=0,bplay=!RM,bStage='',sway=0,by=.55,bp=.42;
+const ramp=(x,a,b)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+// both nets in one frame: the first face lies flat on the screen, the first cell lies in our space, and w is the way the cells fold
+function nets(){
+  const V4=P4?P4.V:G3.V.map(p=>[...p,0]),E=P4?P4.E:G3.E,sub=(a,b)=>a.map((x,i)=>x-b[i]),unit=v=>{const L=Math.hypot(...v);return v.map(x=>x/L);},
+    cen=ids=>V4[0].map((_,d)=>ids.reduce((s,i)=>s+V4[i][d],0)/ids.length),C0=P4&&new Set(P4.cells[0]),
+    F=P4?P4.cells.slice(1).map(c=>c.filter(v=>C0.has(v))).filter(s=>s.length>2):G3.F,
+    o=P4?cen(P4.cells[0]):[0,0,0,0],ew=P4?unit(o.map(x=>-x)):[0,0,0,1],fc=cen(F[0]),ez=unit(sub(fc,o)),ey=unit(sub(V4[F[0][0]],fc)),
+    ex=unit([0,1,2,3].map(i=>{let v=[0,0,0,0];v[i]=1;for(const b of[ew,ez,ey]){const d=dot(v,b);v=v.map((x,k)=>x-d*b[k]);}return v;}).sort((a,b)=>Math.hypot(...b)-Math.hypot(...a))[0]),
+    V=V4.map(p=>[ex,ey,ez,ew].map(e=>dot(sub(p,o),e))),TA=hinge(V,F,E,2),TB=P4?hinge(V,P4.cells,E,3):null,ang=i=>Math.atan2(V[F[0][i]][1],V[F[0][i]][0]);
+  // far is the cell that swings furthest through w: it ends up nearest the lamp, so it is the one whose shadow grows over the rest
+  const up=TB&&TB.map(n=>n.v.reduce((s,i)=>s+V[i][3],0)/n.v.length),far=TB?up.indexOf(Math.max(...up)):-1,ring=F[0].map((_,i)=>i).sort((a,b)=>ang(a)-ang(b));
+  return{TA,TB,far,wmax:Math.max(...V.map(p=>p[3])),ring,ringB:TB&&ring.map(i=>TB[0].v.indexOf(F[0][i]))};}
+const say=st=>{const face=faceOf(sol),A=n=>(/^[IO]/.test(n)?'An':/^\d/.test(n)?'The':'A')+' <b>'+n.toLowerCase()+'</b>',nc=P4&&P4.cells.length;
+  bOut.innerHTML={one:()=>lab('2D','One <b>'+face.name.toLowerCase()+'</b>.'),
+    netA:()=>lab('2D',sol.n+' '+face.pl+' laid flat, joined edge to edge.'),
+    foldA:()=>lab('2D → 3D','Folded up out of the flat until their edges meet, '+sol.s[2]+' at each corner.'),
+    solid:()=>lab('3D',A(sol.name)+': '+sol.n+' '+face.pl+'.'+(tope?'':' No regular 4D shape is built from '+sol.pl+', so it stops here.')),
+    netB:()=>lab('3D',nc+' '+sol.pl+' laid out in our space, joined face to face.'),
+    foldB:()=>lab('3D → 4D','Folded up through the fourth direction until their faces meet, '+tope.r+' around each edge. We only see the shadow. Watch the blue one.'),
+    tope:()=>lab('4D',A(tope.name)+': '+nc+' '+sol.pl+'. '+(NB.TB[NB.far].dep>1?'The blue one swung furthest, right round to the far side. It is nearest the lamp, so its shadow is the biggest.':'The blue one is one of the '+(nc-1)+' that folded up.'))}[st]();};
+const fb=mk($('#build canvas'),(f,ts)=>{const d=Math.min(50,ts-(f.last||ts)),max=+bInp.max,c=f.ctx;f.last=ts;
+  if(bplay){bt=(bt+d*.0002)%max;bInp.value=bt;sway+=d*.0004;}
+  const s=bt>max/2?max-bt:bt,inB=s>1,x=inB?s-1:s,T=inB?NB.TB:NB.TA,g=ramp(x,.1,.36),
+    tilt=inB?1:ramp(x,.42,.75),L=fold(T,ramp(x,.5,.9)),off=[],P3=[];
+  const st=inB?(x<.08?'solid':x<.46?'netB':x<.92?'foldB':'tope'):(x<.08?'one':x<.46?'netA':x<.9?'foldA':'solid');if(st!=bStage)say(bStage=st);
+  // the lamp backs off while pieces swing past where they end up, so nothing reaches it
+  let wm=NB.wmax;for(const P of L)for(const p of P)if(p[3]>wm)wm=p[3];const Dw=2*wm||1;
+  L.forEach(P=>{off.push(P3.length);for(const p of P){const k=Dw/(Dw-p[3]);P3.push([p[0]*k,p[1]*k,p[2]*k]);}});
+  // the rest of the net fades in all at once while the view widens from the first piece to take it in
+  fit(f,P3.slice(0,L[0].length),3);const C=f.C,R=f.R;fit(f,P3,3);f.C=f.C.map((v,i)=>C[i]+(v-C[i])*g);f.R=R+(f.R-R)*g;f.yaw=tilt*(by+.3*Math.sin(sway));f.pitch=tilt*bp;
+  const Q=proj(f,P3),ne=T.length*T[0].E.length,[al,lw]=ne>2000?[.25,.6]:ne>250?[.4,.8]:[.6,1.1];
+  const far=inB?NB.far:-1,path=ok=>{c.beginPath();T.forEach((N,i)=>{if(!ok(i))return;const o=off[i];for(const e of N.E){c.moveTo(Q[o+e[0]][0],Q[o+e[0]][1]);c.lineTo(Q[o+e[1]][0],Q[o+e[1]][1]);}});};
+  const ink=(col,a,w)=>{if(a<=0)return;c.globalAlpha=a;c.strokeStyle=col;c.lineWidth=w;c.stroke();};
+  c.lineJoin=c.lineCap='round';
+  // blue is the piece to watch: the first face while the solid folds up, then it hands over to the far cell as the net of solids appears
+  const hand=inB?1-g:1;c.beginPath();(inB?NB.ringB:NB.ring).forEach((i,k)=>k?c.lineTo(Q[i][0],Q[i][1]):c.moveTo(Q[i][0],Q[i][1]));c.closePath();
+  if(hand>0){c.globalAlpha=.16*hand;c.fillStyle=K.accent;c.fill();}
+  path(i=>i&&i!=far);ink(K.fg,al*g,lw);
+  if(inB){path(i=>!i);ink(K.fg,al,lw);path(i=>i==far);ink(K.accent,g,1.8);}
+  c.beginPath();(inB?NB.ringB:NB.ring).forEach((i,k)=>k?c.lineTo(Q[i][0],Q[i][1]):c.moveTo(Q[i][0],Q[i][1]));c.closePath();ink(K.accent,hand,1.8);
+  c.globalAlpha=1;},{anim:bplay});
+pull(fb,(dx,dy)=>{by+=dx*.01;bp=Math.max(-1.5,Math.min(1.5,bp+dy*.01));});
+const bSync=()=>{bBtn.textContent=bplay?'Pause':'Play';fb.anim=bplay;fb.last=0;};
+bBtn.addEventListener('click',()=>{bplay=!bplay;bSync();});bSync();
+bInp.addEventListener('input',()=>{bt=+bInp.value;fb.dirty=true;});
+// grabbing the slider hands control to the reader
+const bHold=()=>{if(bplay){bplay=false;bSync();}};bInp.addEventListener('pointerdown',bHold);bInp.addEventListener('keydown',bHold);
+
 const lab=(tag,name,sym)=>'<span class="tag">'+tag+'</span>'+name+(sym?' <code>{'+sym+'}</code>':'');
 const bar=(el,items,on,ok,pick)=>{el.innerHTML=items.map((it,i)=>'<button class="btn'+(ok(it)?'':' off')+'" type="button" data-i="'+i+'" aria-pressed="'+(it===on)+'">'+it.name+'</button>').join('');
   el.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>pick(items[+b.dataset.i])));};
@@ -63,7 +114,9 @@ function show(){
   const made=(/^[IO]/.test(sol.name)?'An':'A')+' <b>'+sol.name.toLowerCase()+'</b> is '+sol.n+' '+face.pl+', '+q+' at each corner.';
   out.innerHTML=made+' '+(tope?(/^\d/.test(tope.name)?'The':'A')+' <b>'+tope.name.toLowerCase()+'</b> is '+P4.cells.length+' '+sol.pl+', '+tope.r+' around each edge.'
     :'Three '+sol.pl+' around an edge already overlap, so no regular 4D shape is built from them.');
-  [f2,f3,f4].forEach(f=>f.dirty=true);
+  const key=tope?tope.k:sol.s;
+  if(key!==bKey){bKey=key;NB=nets();bt=0;bInp.max=tope?4:2;bInp.value=0;$('#build-ticks').innerHTML=(tope?['2D','3D','4D','3D','2D']:['2D','3D','2D']).map(t=>'<span>'+t+'</span>').join('');}
+  bStage='';[f2,f3,f4,fb].forEach(f=>f.dirty=true);
 }
 function pickSolid(s){sol=s;tope=TOPE.find(t=>t.cell==s.s)||null;show();}
 const syncPlay=()=>{playBtn.textContent=play?'Pause':'Play';[f2,f3,f4].forEach(f=>{f.anim=play;f.last=0;});};
@@ -71,7 +124,7 @@ playBtn.addEventListener('click',()=>{play=!play;syncPlay();});syncPlay();
 seg([...$('#viz-drag').querySelectorAll('button')],b=>{drag4=b.dataset.d=='4';});
 // advanced mode: filled faces and a movable view; leaving it puts both back
 const advBtn=$('#viz-adv'),solidBox=$('#viz-solid');
-const resetView=()=>[f2,f3,f4].forEach(f=>{f.zoom=1;f.px=f.py=0;f.dirty=true;});
+const resetView=()=>[f2,f3,f4,fb].forEach(f=>{f.zoom=1;f.px=f.py=0;f.dirty=true;});
 advBtn.addEventListener('click',()=>{adv=!adv;advBtn.setAttribute('aria-pressed',adv);$('#viz-advrow').hidden=!adv;$('#viz').classList.toggle('adv',adv);
   if(!adv){resetView();solidBox.checked=solidOn=false;show();}});
 solidBox.addEventListener('change',()=>{solidOn=solidBox.checked;show();});

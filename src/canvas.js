@@ -81,4 +81,4 @@ function start(){readK();
   new MutationObserver(readK).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
   requestAnimationFrame(loop);}
 
-export{$,RM,K,mk,orbit,proj,paint,solid3,seg,shadow4,start};
+export{$,RM,K,mk,orbit,proj,fit,paint,solid3,seg,shadow4,start};
