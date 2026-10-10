@@ -1,6 +1,6 @@
 import './style.css';
 import{dot,polytope,faces,solid,hinge,fold}from './geometry.js';
-import{$,RM,K,mk,proj,fit,paint,solid3,seg,shadow4,start}from './canvas.js';
+import{$,RM,K,mk,proj,fit,paint,solid3,shadow4,start}from './canvas.js';
 
 // ---------- Visualizer: a polygon, the solid built from it, the 4D shape built from that solid ----------
 // blue marks the piece from one dimension down: one face of the solid, one cell of the 4D shape
@@ -111,9 +111,12 @@ function show(){
   P4=tope?cache[tope.k]||(cache[tope.k]=polytope(tope.k)):null;hi=[];fill4=null;
   if(P4){const C=new Set(P4.cells[0]);for(const e of P4.E)if(C.has(e[0])&&C.has(e[1]))hi.push([e[0],e[1],0]);
     if(solidOn){const F=P4.F||(P4.F=faces(P4));fill4={F,M:F.filter(r=>r.every(v=>C.has(v)))};}}
-  $('#viz-l2').innerHTML='<code>{'+face.p+'}</code>';
-  $('#viz-l3').innerHTML='<code>{'+sol.s+'}</code>';
-  $('#viz-l4').innerHTML=tope?'<code>{'+tope.cell+','+tope.r+'}</code>':'';
+  // hovering a symbol spells out what each of its numbers counts
+  const sym=(s,rows)=>'<code tabindex="0">{'+s+'}</code><span class="tip" role="tooltip">'+rows.map(r=>'<span><b>'+r[0]+'</b> '+r[1]+'</span>').join('')+'</span>',
+    one=face.name.toLowerCase(),r2=[face.p,'sides on each '+one],r3=[q,face.pl+' at each corner'];
+  $('#viz-l2').innerHTML=sym(face.p,[[face.p,'sides']]);
+  $('#viz-l3').innerHTML=sym(sol.s,[r2,r3]);
+  $('#viz-l4').innerHTML=tope?sym(tope.cell+','+tope.r,[r2,[q,face.pl+' at each corner of '+(/^[io]/.test(sol.name.toLowerCase())?'an ':'a ')+sol.name.toLowerCase()],[tope.r,sol.pl+' around each edge']]):'';
   bar($('#viz-b2'),POLY,face,()=>true,x=>pickSolid(SOLID.find(s=>+s.s[0]==x.p)));
   bar($('#viz-b3'),SOLID,sol,s=>faceOf(s)===face,pickSolid);
   bar($('#viz-b4'),TOPE,tope,t=>t.cell==sol.s,t=>{tope=t;sol=SOLID.find(s=>s.s==t.cell);show();});
@@ -127,12 +130,12 @@ function show(){
 function pickSolid(s){sol=s;tope=TOPE.find(t=>t.cell==s.s)||null;show();}
 const syncPlay=()=>{playBtn.textContent=play?'Pause':'Play';[f2,f3,f4,fb].forEach(f=>{f.anim=play;f.last=0;});};
 playBtn.addEventListener('click',()=>{play=!play;syncPlay();});syncPlay();
-seg([...$('#viz-drag').querySelectorAll('button')],b=>{drag4=b.dataset.d=='4';});
-// advanced mode: filled faces and a movable view; leaving it puts both back
-const advBtn=$('#viz-adv'),solidBox=$('#viz-solid');
+// advanced mode: filled faces, dragging in 4D and a movable view; leaving it puts them all back
+const advBtn=$('#viz-adv'),solidBox=$('#viz-solid'),dragBox=$('#viz-drag4');
 const resetView=()=>[f2,f3,f4,fb].forEach(f=>{f.zoom=1;f.px=f.py=0;f.dirty=true;});
 advBtn.addEventListener('click',()=>{adv=!adv;advBtn.setAttribute('aria-pressed',adv);$('#viz-advrow').hidden=!adv;$('#viz').classList.toggle('adv',adv);
-  if(!adv){resetView();solidBox.checked=solidOn=false;show();}});
+  if(!adv){resetView();solidBox.checked=solidOn=false;dragBox.checked=drag4=false;show();}});
+dragBox.addEventListener('change',()=>{drag4=dragBox.checked;});
 solidBox.addEventListener('change',()=>{solidOn=solidBox.checked;show();});
 $('#viz-reset').addEventListener('click',resetView);
 show();
