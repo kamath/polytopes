@@ -46,19 +46,22 @@ pull(f4,(dx,dy)=>{if(drag4){turn(0,3,dx*.01);turn(1,3,dy*.01);}else{f4.yaw+=dx*.
 
 // ---------- Build: one flat shape, copies of it folded up into the solid, copies of the solid folded up into the 4D shape, and back ----------
 const bInp=$('#build-t'),bOut=$('#build-out'),bBtn=$('#build-play');
-let NB,bKey,bt=0,bplay=!RM,bStage='',sway=0,by=.55,bp=.42;
+let NB,bKey,bt=0,bplay=!RM,bStage='',sway=0,by=.5,bp=.3;
 const ramp=(x,a,b)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 // both nets in one frame: the first face lies flat on the screen, the first cell lies in our space, and w is the way the cells fold
 function nets(){
   const V4=P4?P4.V:G3.V.map(p=>[...p,0]),E=P4?P4.E:G3.E,sub=(a,b)=>a.map((x,i)=>x-b[i]),unit=v=>{const L=Math.hypot(...v);return v.map(x=>x/L);},
     cen=ids=>V4[0].map((_,d)=>ids.reduce((s,i)=>s+V4[i][d],0)/ids.length),C0=P4&&new Set(P4.cells[0]),
     F=P4?P4.cells.slice(1).map(c=>c.filter(v=>C0.has(v))).filter(s=>s.length>2):G3.F,
-    o=P4?cen(P4.cells[0]):[0,0,0,0],ew=P4?unit(o.map(x=>-x)):[0,0,0,1],fc=cen(F[0]),ez=unit(sub(fc,o)),ey=unit(sub(V4[F[0][0]],fc)),
+    o=P4?cen(P4.cells[0]):[0,0,0,0],ew=P4?unit(o.map(x=>-x)):[0,0,0,1],fc=cen(F[0]),ez=unit(sub(fc,o)),
+    // the first face sits on one of its edges, so squares and cubes come out square to the screen
+    v0=V4[F[0][0]],v1=F[0].slice(1).map(i=>V4[i]).sort((a,b)=>Math.hypot(...sub(a,v0))-Math.hypot(...sub(b,v0)))[0],ey=unit(sub(fc,v0.map((x,i)=>(x+v1[i])/2))),
     ex=unit([0,1,2,3].map(i=>{let v=[0,0,0,0];v[i]=1;for(const b of[ew,ez,ey]){const d=dot(v,b);v=v.map((x,k)=>x-d*b[k]);}return v;}).sort((a,b)=>Math.hypot(...b)-Math.hypot(...a))[0]),
     V=V4.map(p=>[ex,ey,ez,ew].map(e=>dot(sub(p,o),e))),TA=hinge(V,F,E,2),TB=P4?hinge(V,P4.cells,E,3):null,ang=i=>Math.atan2(V[F[0][i]][1],V[F[0][i]][0]);
   // far is the cell that swings furthest through w: it ends up nearest the lamp, so it is the one whose shadow grows over the rest
   const up=TB&&TB.map(n=>n.v.reduce((s,i)=>s+V[i][3],0)/n.v.length),far=TB?up.indexOf(Math.max(...up)):-1,ring=F[0].map((_,i)=>i).sort((a,b)=>ang(a)-ang(b));
-  return{TA,TB,far,wmax:Math.max(...V.map(p=>p[3])),ring,ringB:TB&&ring.map(i=>TB[0].v.indexOf(F[0][i]))};}
+  const fv=TB&&TB[far].v,farF=TB&&(P4.F||(P4.F=faces(P4))).filter(r=>r.every(v=>fv.includes(v))).map(r=>r.map(v=>fv.indexOf(v)));
+  return{TA,TB,far,farF,wmax:Math.max(...V.map(p=>p[3])),ring,ringB:TB&&ring.map(i=>TB[0].v.indexOf(F[0][i]))};}
 const say=st=>{const face=faceOf(sol),A=n=>(/^[IO]/.test(n)?'An':/^\d/.test(n)?'The':'A')+' <b>'+n.toLowerCase()+'</b>',nc=P4&&P4.cells.length;
   bOut.innerHTML={one:()=>lab('2D','One <b>'+face.name.toLowerCase()+'</b>.'),
     netA:()=>lab('2D',sol.n+' '+face.pl+' laid flat, joined edge to edge.'),
@@ -70,23 +73,28 @@ const say=st=>{const face=faceOf(sol),A=n=>(/^[IO]/.test(n)?'An':/^\d/.test(n)?'
 const fb=mk($('#build canvas'),(f,ts)=>{const d=Math.min(50,ts-(f.last||ts)),max=+bInp.max,c=f.ctx;f.last=ts;
   if(bplay){bt=(bt+d*.0002)%max;bInp.value=bt;sway+=d*.0004;}
   const s=bt>max/2?max-bt:bt,inB=s>1,x=inB?s-1:s,T=inB?NB.TB:NB.TA,g=ramp(x,.1,.36),
-    tilt=inB?1:ramp(x,.42,.75),L=fold(T,ramp(x,.5,.9)),off=[],P3=[];
+    tilt=inB?1:ramp(x,.42,.75),u=ramp(x,.5,.9),L=fold(T,u),off=[],P3=[];
   const st=inB?(x<.08?'solid':x<.46?'netB':x<.92?'foldB':'tope'):(x<.08?'one':x<.46?'netA':x<.9?'foldA':'solid');if(st!=bStage)say(bStage=st);
   // the lamp backs off while pieces swing past where they end up, so nothing reaches it
   let wm=NB.wmax;for(const P of L)for(const p of P)if(p[3]>wm)wm=p[3];const Dw=2*wm||1;
   L.forEach(P=>{off.push(P3.length);for(const p of P){const k=Dw/(Dw-p[3]);P3.push([p[0]*k,p[1]*k,p[2]*k]);}});
   // the rest of the net fades in all at once while the view widens from the first piece to take it in
-  fit(f,P3.slice(0,L[0].length),3);const C=f.C,R=f.R;fit(f,P3,3);f.C=f.C.map((v,i)=>C[i]+(v-C[i])*g);f.R=R+(f.R-R)*g;f.yaw=tilt*(by+.3*Math.sin(sway));f.pitch=tilt*bp;
+  fit(f,P3.slice(0,L[0].length),3);const C=f.C,R=f.R;fit(f,P3,3);f.C=f.C.map((v,i)=>C[i]+(v-C[i])*g);f.R=R+(f.R-R)*g;f.yaw=tilt*(by+.2*Math.sin(sway));f.pitch=tilt*bp;
   const Q=proj(f,P3),ne=T.length*T[0].E.length,[al,lw]=ne>2000?[.25,.6]:ne>250?[.4,.8]:[.6,1.1];
-  const far=inB?NB.far:-1,path=ok=>{c.beginPath();T.forEach((N,i)=>{if(!ok(i))return;const o=off[i];for(const e of N.E){c.moveTo(Q[o+e[0]][0],Q[o+e[0]][1]);c.lineTo(Q[o+e[1]][0],Q[o+e[1]][1]);}});};
-  const ink=(col,a,w)=>{if(a<=0)return;c.globalAlpha=a;c.strokeStyle=col;c.lineWidth=w;c.stroke();};
+  const far=inB?NB.far:-1,ink=(col,a,w)=>{if(a<=0)return;c.globalAlpha=a;c.strokeStyle=col;c.lineWidth=w;c.stroke();};
+  const poly=(o,r)=>{r.forEach((i,k)=>k?c.lineTo(Q[o+i][0],Q[o+i][1]):c.moveTo(Q[o+i][0],Q[o+i][1]));c.closePath();};
+  // grey edges fade with distance once the view is tilted, so the near side of a shape reads in front of its far side
+  let z0=1e9,z1=-1e9;for(const q of Q){if(q[2]<z0)z0=q[2];if(q[2]>z1)z1=q[2];}const NZ=8,zk=NZ/(z1-z0+1e-9);
+  const grey=(ok,a)=>{const bk=Array.from({length:NZ},()=>[]);T.forEach((N,i)=>{if(!ok(i))return;const o=off[i];for(const e of N.E){const p=Q[o+e[0]],q=Q[o+e[1]];bk[Math.min(NZ-1,Math.floor(((p[2]+q[2])/2-z0)*zk))].push(p,q);}});
+    bk.forEach((es,k)=>{if(!es.length)return;c.beginPath();for(let j=0;j<es.length;j+=2){c.moveTo(es[j][0],es[j][1]);c.lineTo(es[j+1][0],es[j+1][1]);}ink(K.fg,a*(1-tilt*.7*(1-k/(NZ-1))),lw*(1+tilt*.5*k/(NZ-1)));});};
   c.lineJoin=c.lineCap='round';
   // blue is the piece to watch: the first face while the solid folds up, then it hands over to the far cell as the net of solids appears
-  const hand=inB?1-g:1;c.beginPath();(inB?NB.ringB:NB.ring).forEach((i,k)=>k?c.lineTo(Q[i][0],Q[i][1]):c.moveTo(Q[i][0],Q[i][1]));c.closePath();
-  if(hand>0){c.globalAlpha=.16*hand;c.fillStyle=K.accent;c.fill();}
-  path(i=>i&&i!=far);ink(K.fg,al*g,lw);
-  if(inB){path(i=>!i);ink(K.fg,al,lw);path(i=>i==far);ink(K.accent,g,1.8);}
-  c.beginPath();(inB?NB.ringB:NB.ring).forEach((i,k)=>k?c.lineTo(Q[i][0],Q[i][1]):c.moveTo(Q[i][0],Q[i][1]));c.closePath();ink(K.accent,hand,1.8);
+  const hand=inB?1-g:1,ring=inB?NB.ringB:NB.ring;
+  if(hand>0){c.beginPath();poly(0,ring);c.globalAlpha=.16*hand;c.fillStyle=K.accent;c.fill();}
+  grey(i=>i&&i!=far,al*g*(inB?.7:1));
+  if(inB){grey(i=>!i,al);c.fillStyle=K.accent;c.globalAlpha=.09*g;for(const r of NB.farF){c.beginPath();poly(off[far],r);if(g>0)c.fill();}
+    c.beginPath();for(const r of NB.farF)poly(off[far],r);ink(K.accent,g,1.8);}
+  c.beginPath();poly(0,ring);ink(K.accent,hand,1.8);
   c.globalAlpha=1;},{anim:bplay});
 pull(fb,(dx,dy)=>{by+=dx*.01;bp=Math.max(-1.5,Math.min(1.5,bp+dy*.01));});
 const bSync=()=>{bBtn.textContent=bplay?'Pause':'Play';fb.anim=bplay;fb.last=0;};
