@@ -34,7 +34,7 @@ const topes={},tope=k=>topes[k]||(topes[k]=polytope(k));
 // a slow double turn in 4D: A mixes x with w, B mixes y with z
 const spin4=(A,B)=>{const ca=Math.cos(A),sa=Math.sin(A),cb=Math.cos(B),sb=Math.sin(B);return v=>[v[0]*ca-v[3]*sa,v[1]*cb-v[2]*sb,v[1]*sb+v[2]*cb,v[0]*sa+v[3]*ca];};
 
-// ---------- Projection: a solid cube between a lamp and a sheet, and the shadow that lands on the sheet ----------
+// ---------- Projection: a cube between a lamp and a sheet, the shadow on the sheet, and that shadow's shadow on a line ----------
 // the cube is drawn as a block: only the faces turned to the viewer, brighter where the lamp reaches them
 // the shadow is one dark patch, the hull of where the corners land, and a ray runs to each corner of that outline
 (()=>{
@@ -42,9 +42,10 @@ const spin4=(A,B)=>{const ca=Math.cos(A),sa=Math.sin(A),cb=Math.cos(B),sb=Math.s
   const sub=(a,b)=>a.map((x,i)=>x-b[i]),area=(Q,r)=>{let a=0;r.forEach((i,k)=>{const j=r[(k+1)%r.length];a+=Q[i][0]*Q[j][1]-Q[j][0]*Q[i][1];});return a;};
   const dark=()=>parseInt(K.bg.slice(1,3),16)<128;
   const ring=(c,Q,r)=>{c.beginPath();r.forEach((i,k)=>k?c.lineTo(Q[i][0],Q[i][1]):c.moveTo(Q[i][0],Q[i][1]));c.closePath();};
-  const face=(c,Q,F)=>{const dk=dark();ring(c,Q,F.r);
-    c.globalAlpha=1;c.fillStyle=K.bg;c.fill();c.globalAlpha=dk?.07+.3*F.lit:.32-.28*F.lit;c.fillStyle=K.fg;c.fill();
-    c.globalAlpha=.7;c.strokeStyle=K.fg;c.lineWidth=1.1;c.stroke();c.globalAlpha=1;};
+  // m colours the face blue
+  const face=(c,Q,F,m)=>{const dk=dark();ring(c,Q,F.r);
+    c.globalAlpha=1;c.fillStyle=K.bg;c.fill();c.globalAlpha=m?.4+.35*F.lit:dk?.07+.3*F.lit:.32-.28*F.lit;c.fillStyle=m?K.accent:K.fg;c.fill();
+    c.globalAlpha=m?1:.7;c.strokeStyle=m?K.accent:K.fg;c.lineWidth=m?1.6:1.1;c.stroke();c.globalAlpha=1;};
   // a lit sheet with the shadow cut out of it: o is where the shadow's corners start in Q
   const sheet=(c,Q,r,o,hull)=>{const dk=dark();ring(c,Q,r);c.globalAlpha=dk?.2:.04;c.fillStyle=K.fg;c.fill();c.globalAlpha=.25;c.strokeStyle=K.fg;c.lineWidth=1;c.stroke();
     ring(c,Q,hull.map(i=>i+o));c.globalAlpha=1;c.fillStyle=K.bg;c.fill();if(!dk){c.globalAlpha=.45;c.fillStyle=K.fg;c.fill();}c.globalAlpha=1;};
@@ -62,34 +63,34 @@ const spin4=(A,B)=>{const ca=Math.cos(A),sa=Math.sin(A),cb=Math.cos(B),sb=Math.s
     const FC=QD.map(r=>{const c=[0,1,2].map(d=>r.reduce((s,i)=>s+V[i][d],0)/4),n=sub(c,O),u=sub(V[r[1]],V[r[0]]),w=sub(V[r[2]],V[r[1]]),l=sub(L,c);
       return{r,o:Math.sign(dot([u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]],n)),lit:Math.max(0,dot(l,n)/Math.hypot(...l))};});
     return{V,S,FC,hull:[...half(id),...half(id.slice().reverse())]};};
-  // a figure of two panes on one slider that turns the cube: a and b are each [draw(f,st), framing]
-  const two=(id,a,b)=>{const inp=$('#'+id+'-t'),cvs=$('#'+id).querySelectorAll('canvas');let st;
-    const fs=[mk(cvs[0],f=>a[0](f,st),a[1]),mk(cvs[1],f=>b[0](f,st),b[1])];
-    const calc=()=>{st=turn(+inp.value);fs.forEach(f=>f.dirty=true);};
-    inp.addEventListener('input',calc);calc();player($('#'+id+'-play'),inp,{dur:6000});return fs;};
-  // 3D to 2D: the cube, the lamp and the sheet from the side, then the sheet from above
-  orbit(two('proj',[(f,st)=>{const c=f.ctx,Q=proj(f,[...st.V,...st.S,[-T,0,-T],[T,0,-T],[T,0,T],[-T,0,T],L]),lp=Q[20];c.lineJoin=c.lineCap='round';
-      sheet(c,Q,[16,17,18,19],8,st.hull);rays(c,lp,st.hull.map(i=>Q[i+8]));st.FC.filter(F=>area(Q,F.r)*F.o<0).forEach(F=>face(c,Q,F));lamp(c,lp);},{yaw:.6,pitch:.3,R:5,C:[0,3.4,0]}],
-    [(f,st)=>{const c=f.ctx,Q=proj(f,[...st.S.map(p=>[p[0],p[2]]),[-T,-T],[T,-T],[T,T],[-T,T]],true);c.lineJoin='round';sheet(c,Q,[8,9,10,11],0,st.hull);},{R:T*1.2}])[0]);
-  // 2D to 1D: a second lamp lies on the sheet, and the flat shadow lands on the sheet's bottom edge as a bar; then that edge by itself
+  // the second step: a lamp lying on the sheet throws the flat shadow onto the sheet's bottom edge, where it lands as a bar
   const HL=6,G=3.6,W=4.2,R=5.6;
-  const edge=st=>{const A=st.S.map(p=>[p[0],p[2]]),x=A.map(p=>p[0]*(G+HL)/(p[1]+HL));return{A,lo:Math.min(...x),hi:Math.max(...x)};};
+  const edge=st=>{const A=st.S.map(p=>[p[0],p[2]]),x=A.map(p=>p[0]*(G+HL)/(p[1]+HL));return{A,x,lo:Math.min(...x),hi:Math.max(...x)};};
   const bar=(c,p,q)=>{c.strokeStyle=K.fg;c.lineWidth=3.2;c.beginPath();c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);c.stroke();};
-  two('flat',[(f,st)=>{const c=f.ctx,e=edge(st),Q=proj(f,[...e.A,[-W,-HL-.7],[W,-HL-.7],[W,G],[-W,G],[0,-HL],[e.lo,G],[e.hi,G]],true),lp=Q[12];c.lineJoin=c.lineCap='round';
-      sheet(c,Q,[8,9,10,11],0,st.hull);rays(c,lp,[Q[13],Q[14]]);bar(c,Q[13],Q[14]);lamp(c,lp);},{R,C:[0,(G-HL-.7)/2,0]}],
-    [(f,st)=>{const c=f.ctx,e=edge(st),Q=proj(f,[[-W,0],[W,0],[e.lo,0],[e.hi,0]],true);c.lineCap='round';
-      c.globalAlpha=.25;c.strokeStyle=K.fg;c.lineWidth=1;c.beginPath();c.moveTo(Q[0][0],Q[0][1]);c.lineTo(Q[1][0],Q[1][1]);c.stroke();c.globalAlpha=1;bar(c,Q[2],Q[3]);},{R}]);
+  // one face is blue all the way down, the way one cell is blue in the tesseract figures:
+  // filled on the cube, its four edges in the shadow, and a tick on the line where each of its corners lands
+  const TOP=cubeEdges(3).filter(e=>e[0]&2&&e[1]&2),top=F=>F.r.every(i=>i&2);
+  const wire=(c,Q,E,col,a,lw)=>{c.beginPath();for(const e of E){c.moveTo(Q[e[0]][0],Q[e[0]][1]);c.lineTo(Q[e[1]][0],Q[e[1]][1]);}c.globalAlpha=a;c.strokeStyle=col;c.lineWidth=lw;c.stroke();c.globalAlpha=1;};
+  const ticks=(c,Q,o,on,col,h,lw)=>{c.strokeStyle=col;c.lineWidth=lw;c.beginPath();for(let i=0;i<8;i++)if(!(i&2)==!on){c.moveTo(Q[o+i][0],Q[o+i][1]-h);c.lineTo(Q[o+i][0],Q[o+i][1]+h);}c.stroke();};
+  const marks=(c,Q,o)=>{ticks(c,Q,o,0,K.fg,6,1.2);ticks(c,Q,o,1,K.accent,9,2);};
+  // a figure of three panes on one slider that turns the cube, 3D to 2D to 1D:
+  // the cube, its lamp and the sheet from the side, then the sheet from above with the second lamp, then the line by itself
+  // w follows one face down in blue and marks where every corner lands on the line
+  const three=(id,w)=>{const inp=$('#'+id+'-t'),cvs=$('#'+id).querySelectorAll('canvas');let st;
+    const fs=[mk(cvs[0],f=>{const c=f.ctx,Q=proj(f,[...st.V,...st.S,[-T,0,-T],[T,0,-T],[T,0,T],[-T,0,T],L]),lp=Q[20],sh=Q.slice(8,16);c.lineJoin=c.lineCap='round';
+        sheet(c,Q,[16,17,18,19],8,st.hull);if(w)wire(c,sh,TOP,K.accent,1,1.6);
+        rays(c,lp,st.hull.map(i=>sh[i]));st.FC.filter(F=>area(Q,F.r)*F.o<0).forEach(F=>face(c,Q,F,w&&top(F)));lamp(c,lp);},{yaw:.6,pitch:.3,R:5,C:[0,3.4,0]}),
+      mk(cvs[1],f=>{const c=f.ctx,e=edge(st),Q=proj(f,[...e.A,[-W,-HL-.7],[W,-HL-.7],[W,G],[-W,G],[0,-HL],[e.lo,G],[e.hi,G],...e.x.map(x=>[x,G])],true),lp=Q[12];c.lineJoin=c.lineCap='round';
+        sheet(c,Q,[8,9,10,11],0,st.hull);if(w)wire(c,Q,TOP,K.accent,1,1.8);rays(c,lp,[Q[13],Q[14]]);
+        bar(c,Q[13],Q[14]);if(w)marks(c,Q,15);lamp(c,lp);},{R,C:[0,(G-HL-.7)/2,0]}),
+      mk(cvs[2],f=>{const c=f.ctx,e=edge(st),Q=proj(f,[[-W,0],[W,0],[e.lo,0],[e.hi,0],...e.x.map(x=>[x,0])],true);c.lineCap='round';
+        c.globalAlpha=.25;c.strokeStyle=K.fg;c.lineWidth=1;c.beginPath();c.moveTo(Q[0][0],Q[0][1]);c.lineTo(Q[1][0],Q[1][1]);c.stroke();c.globalAlpha=1;bar(c,Q[2],Q[3]);if(w)marks(c,Q,4);},{R})];
+    const calc=()=>{st=turn(+inp.value);fs.forEach(f=>f.dirty=true);};
+    inp.addEventListener('input',calc);calc();orbit(fs[0]);player($('#'+id+'-play'),inp,{dur:6000});};
+  three('down',false);three('beads',true);
 })();
 
-// ---------- Projection, one dimension up: the tesseract turns in 4D and only its solid shadow can be drawn ----------
-(()=>{
-  const inp=$('#proj4-t'),P=tope(8),C=new Set(P.cells[0]),hi=P.E.filter(e=>C.has(e[0])&&C.has(e[1])).map(e=>[e[0],e[1],0]);let t=0;
-  const f=mk($('#proj4 canvas'),f=>shadow4(f,P,spin4(t*1.1,t*.3),hi,null),{R:1.3,yaw:.4,pitch:.3});orbit(f);
-  const calc=()=>{t=+inp.value;f.dirty=true;};
-  inp.addEventListener('input',calc);calc();player($('#proj4-play'),inp,{dur:6000});
-})();
-
-// ---------- Nets: six squares that fold into a cube, eight cubes that fold into a tesseract ----------
+// ---------- Nets: squares that fold into a cube, cubes that fold into a tesseract ----------
 // the net of the (m+1)-cube with piece i marked: 0 is the base, then the sides, and the last is the lid; i < 0 marks nothing
 const piece=(N,m,i)=>{const w=1<<m,o=i*w;
   return{E:N.E.map(e=>[e[0],e[1],i>=0&&e[0]>=o&&e[0]<o+w?1:0]),F:i<0?[]:quads(m).map(q=>({i:q.map(j=>j+o),a:m==2?.18:.09}))};};
@@ -183,13 +184,19 @@ function lampScene(H){const T=3.1,top=2,P=corners(3).map(v=>[v[0],2+v[1],v[2]]);
   player($('#pieces-play'),inp,{dur:3200});
 })();
 
-// ---------- Folding: the box itself, its shadow on a sheet, and the shadow of the same fold one dimension up ----------
+// ---------- Folding, one dimension at a time: four lines into a square, six squares into a box, eight cubes into a tesseract ----------
 (()=>{
   const el=$('#both'),inp=$('#both-t'),cvs=el.querySelectorAll('canvas'),S=[];let kind=2;
-  const fs=[mk(cvs[0],f=>paint(f,S[0]),{yaw:1.02,pitch:.5}),mk(cvs[1],f=>paint(f,S[1])),mk(cvs[2],f=>paint(f,S[2]))];orbit(fs[0]);orbit(fs[2]);
-  // the marked piece is a kind (base, a side, the lid), so the box and the tesseract always have a matching one marked
-  const calc=()=>{const u=+inp.value,j=[0,1,5][kind],idx=[0,1,7][kind],N=net(2,u*Math.PI/2);
-    S[0]={...piece(N,2,j),P:N.P.map(p=>[p[0],p[2],p[1]]),R:3.9,C:[0,.9,.9]};S[1]=netShadow(2,u,j);S[2]=netShadow(3,u,idx);fs.forEach(f=>f.dirty=true);};
+  // the line gets a dot at each joint, so its four pieces can be told apart while it lies flat
+  const fs=[mk(cvs[0],f=>{paint(f,S[0]);const c=f.ctx;c.fillStyle=K.fg;for(const q of proj(f,S[0].P,true)){c.beginPath();c.arc(q[0],q[1],2.4,0,7);c.fill();}}),
+    mk(cvs[1],f=>paint(f,S[1]),{yaw:1.02,pitch:.5}),mk(cvs[2],f=>paint(f,S[2]))];orbit(fs[1]);orbit(fs[2]);
+  // the net of a square, as (x, height): a base, a side on each end of it, and a lid hinged to the right-hand side
+  const net1=th=>{const c=Math.cos(th),s=Math.sin(th),c2=Math.cos(2*th),s2=Math.sin(2*th);
+    return[[-1,0],[1,0],[1,0],[1+2*c,2*s],[-1,0],[-1-2*c,2*s],[1+2*c,2*s],[1+2*c+2*c2,2*s+2*s2]];};
+  // the marked piece is a kind (base, a side, the lid), so all three always have a matching one marked
+  const calc=()=>{const u=+inp.value,th=u*Math.PI/2,i=[0,1,3][kind],j=[0,1,5][kind],idx=[0,1,7][kind],N=net(2,th);
+    S[0]={flat:true,P:net1(th).map(p=>[p[0],-p[1]]),E:[0,1,2,3].map(k=>[2*k,2*k+1,k==i?1:0]),R:4.7,C:[1,-1.4,0]};
+    S[1]={...piece(N,2,j),P:N.P.map(p=>[p[0],p[2],p[1]]),R:3.9,C:[0,.9,.9]};S[2]=netShadow(3,u,idx);fs.forEach(f=>f.dirty=true);};
   seg([...$('#both-kind').querySelectorAll('button')],b=>{kind=+b.dataset.i;calc();});
   inp.addEventListener('input',calc);calc();player($('#both-play'),inp,{dur:7000});
 })();

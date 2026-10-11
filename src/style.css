@@ -45,10 +45,11 @@ canvas.grab:active{cursor:grabbing}
 .tag{font-family:var(--mono);font-size:11px;color:var(--fg);border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:1px 5px;margin-right:6px}
 .duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
 .tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
-.map{display:grid;grid-template-columns:repeat(7,auto);justify-content:start;align-items:center;gap:10px 8px;font-size:14px;color:var(--muted)}
-.map b{color:var(--fg);font-weight:500;margin-right:6px}
-.map i{font-style:normal}
-.map .tag{margin:0}
+.map{display:grid;grid-template-columns:auto repeat(3,1fr);align-items:baseline;gap:10px 16px;font-size:14px;line-height:1.45;color:var(--muted)}
+.map b{color:var(--fg);font-weight:500}
+.map .h{font-size:12px;color:var(--faint);padding-bottom:8px;border-bottom:1px solid var(--line)}
+.map>span:first-child{align-self:stretch;border-bottom:1px solid var(--line)}
+.map+.lab{margin-top:14px}
 
 .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:14px}
 .ctl label,.k{font-size:13px;color:var(--muted)}
