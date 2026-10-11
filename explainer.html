@@ -4,22 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Polyhedra to Polytopes</title>
-<meta name="description" content="An interactive walk from cubes to tesseracts: sweep, shadow, slice, and why exactly six regular 4D polytopes exist.">
+<meta name="description" content="A cube on your screen is a 3D shape flattened onto 2D. An interactive walk through doing the same with 4D: folding a tesseract, reading its shadow, and why exactly six regular 4D polytopes exist.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 </head>
 <body>
 <main>
-<h1>From polyhedra to polytopes</h1>
-<p class="meta">Move the sliders, and drag any shape to turn it. <a href="./">Back to the visualizer</a></p>
+<h1>What am I looking at?</h1>
+<p class="meta">Drag any shape to turn it. <a href="./">Back to the visualizer</a></p>
 
-<p>Nobody can picture four dimensions, and you don't need to.</p>
-<p>Think of someone who lives inside a tabletop. They know left and right, forward and back. Up means nothing to them. Hold a cube over their world and the most they can ever get is a flat picture of it: a shadow, or a slice.</p>
-<p>We are that person, one step up. There is a fourth direction we can't point in, and the most we can get of a 4D shape is a solid picture of it. So each figure below shows their view of a cube first, then our view of a tesseract, which is the 4D cube.</p>
+<figure class="fig" id="hero">
+  <div class="tri">
+    <div><div class="cv"><canvas role="img" aria-label="A square, slowly turning"></canvas></div></div>
+    <div><div class="cv"><canvas role="img" aria-label="A cube, slowly turning, with one square face in blue"></canvas></div></div>
+    <div class="last"><div class="cv"><canvas role="img" aria-label="A tesseract, slowly turning, with one of its eight cubes in blue"></canvas></div></div>
+  </div>
+  <div class="ctl">
+    <button class="btn" id="hero-play" type="button" aria-pressed="true">Pause</button>
+  </div>
+</figure>
+<p>A square, a cube, and a tesseract. Six squares make a cube, and one of them is blue in the middle picture. Take the same step once more and eight cubes make a tesseract, with one of them blue on the right.</p>
+<p>The eight cubes in the third picture come out distorted, because a tesseract doesn't fit in our world. It needs four dimensions, and we only have three to draw it in.</p>
+<p>A smaller version of the same problem turns up every time a solid thing is drawn on a flat sheet of paper.</p>
 
-<h2>A tesseract is a cube, pulled once more</h2>
-<p class="setup">Start with a line. Pull it sideways and it leaves a square. Pull the square up and it leaves a cube. Pull the cube in the direction we can't point in.</p>
+<h2>What does 4D even mean?</h2>
+<p>A dimension is an independent axis: a direction to measure along that none of the others can stand in for. A line has one, its length. A square has two, and a cube has three. The world we live in stops at three, but mathematics doesn't. A fourth axis can be added, then a fifth, and so on without end. A tesseract is what a cube becomes with a fourth.</p>
 <figure class="fig" id="sweep">
   <div class="cv wide"><canvas role="img" aria-label="A shape being swept into the next dimension"></canvas></div>
   <div class="ctl">
@@ -29,29 +39,44 @@
   <div class="ticks" aria-hidden="true"><span>line</span><span>square</span><span>cube</span><span>tesseract</span></div>
   <p class="out" id="sweep-out"></p>
 </figure>
-<p>A page has no "up", so a drawing fakes it with a slanted line. The blue lines fake the fourth direction the same way. Every pull doubles the corners: 2, 4, 8, 16.</p>
+<p>The animation rests on each shape and picks out in blue what it is made of: the square itself, then the cube's six squares one at a time, then the tesseract's eight cubes one at a time.</p>
+<p>Each drag goes along a new axis, and this is what independent means: moving along a line never takes you sideways, and sliding around on a sheet never takes you up. Our space has no fourth axis to drag the cube along, so the drawing fakes one with the blue slanted lines, the same way a flat page fakes "up" to draw a cube.</p>
 
-<h2>A shadow is a flattened picture</h2>
-<p class="setup">Start with something ordinary. Hang a wire cube under a lamp and look at its shadow on the table.</p>
-<figure class="fig" id="shadow">
-  <div class="cv wide"><canvas role="img" aria-label="A lamp above a wire cube, casting its shadow on a table"></canvas></div>
+<h2>Projecting into a lower dimension</h2>
+<p>A shape can't fit into a space with fewer dimensions than it has, but it can leave a picture of itself there. A shadow is the everyday case. Here a cube hangs between a lamp and a sheet of paper, and the right-hand panel shows its shadow by itself: a three-dimensional shape, projected into two dimensions.</p>
+<figure class="fig" id="proj">
+  <div class="duo">
+    <div><div class="cv"><canvas role="img" aria-label="A solid cube hanging between a lamp and a sheet of paper, casting a shadow on the sheet"></canvas></div></div>
+    <div><div class="cv"><canvas role="img" aria-label="The sheet seen from above, with the cube's flat shadow on it"></canvas></div></div>
+  </div>
   <div class="ctl">
-    <button class="btn" id="shadow-play" type="button" aria-pressed="false">Play</button>
-    <label for="shadow-t">Lamp</label>
-    <span class="k">low</span>
-    <input type="range" id="shadow-t" min="0" max="1" step="any" value="0">
-    <span class="k">high</span>
+    <button class="btn" id="proj-play" type="button" aria-pressed="false">Play</button>
+    <label for="proj-t">Turn the cube</label>
+    <input type="range" id="proj-t" min="0" max="1" step="any" value="0.7">
   </div>
 </figure>
-<p>The shadow is a square inside a square. The blue square is bigger only because the blue face is nearer the lamp. Both faces are the same size. Raise the lamp and the two shadows move closer to the same size.</p>
+<p>The shadow is flat. It has an outline and nothing more, yet it changes as the cube turns: four sides when a face points at the lamp, six when a corner does. The cube itself never changes.</p>
+<p>This is called a <b>projection</b>: the picture a shape leaves in a space with one dimension fewer. Something is always lost, since a shadow has no depth, but it is the only way a shape can show up in a space too small to hold it.</p>
 
-<h2>A shadow is one step flatter than the thing</h2>
-<p class="setup">A flat square casts a shadow that is a line. A cube casts a shadow that is a flat shape. So a tesseract casts a shadow that is a solid shape. The tabletop is that person's whole world. For a lamp in the fourth direction, our whole room is the tabletop.</p>
+<h2>From four dimensions to three</h2>
+<p>A tesseract is the four-dimensional cube, built from eight cubes the way a cube is built from six squares. Our space is one dimension too small to hold it, so it can only show up here as a projection. The lamp and the tesseract sit out in the fourth direction, and the shadow lands in our three-dimensional space, which plays the part of the sheet. The figure shows what arrives.</p>
+<figure class="fig" id="proj4">
+  <div class="cv wide"><canvas role="img" aria-label="The solid shadow of a tesseract, changing as the tesseract turns"></canvas></div>
+  <div class="ctl">
+    <button class="btn" id="proj4-play" type="button" aria-pressed="false">Play</button>
+    <label for="proj4-t">Turn the tesseract</label>
+    <input type="range" id="proj4-t" min="0" max="1" step="any" value="0.7">
+  </div>
+</figure>
+<p>The blue cell is a perfect cube on the tesseract, but in the projection it is a lopsided block, and it keeps changing as the tesseract turns even though the tesseract stays the same.</p>
+
+<h2>Where is the lamp in 4D?</h2>
+<p>A flat creature living in a tabletop can only be shown a cube as a shadow on its table. With a tesseract, the 4D cube, we are that creature, and the whole of our three-dimensional space is the table. A shadow always has one dimension fewer than the thing that casts it: a square's shadow is a line, a cube's is a flat shape, and a tesseract's is a solid shape that lands right here in our space. The three pictures show those in order.</p>
 <figure class="fig" id="ladder">
   <div class="tri">
-    <div><div class="cv"><canvas role="img" aria-label="A lamp above a flat square, casting a shadow onto a line"></canvas></div><p class="lab"><span class="tag">2D</span>A square's shadow is a line</p></div>
-    <div><div class="cv"><canvas role="img" aria-label="A lamp above a cube, casting a flat shadow onto a table"></canvas></div><p class="lab"><span class="tag">3D</span>A cube's shadow is a flat shape</p></div>
-    <div class="last"><div class="cv"><canvas role="img" aria-label="The solid shadow of a tesseract: a cube inside a cube"></canvas></div><p class="lab"><span class="tag">4D</span>A tesseract's shadow is a solid shape</p></div>
+    <div><div class="cv"><canvas role="img" aria-label="A lamp above a flat square, casting a shadow onto a line"></canvas></div></div>
+    <div><div class="cv"><canvas role="img" aria-label="A lamp above a cube, casting a flat shadow onto a table"></canvas></div></div>
+    <div class="last"><div class="cv"><canvas role="img" aria-label="The solid shadow of a tesseract: a cube inside a cube"></canvas></div></div>
   </div>
   <div class="ctl">
     <button class="btn" id="ladder-play" type="button" aria-pressed="false">Play</button>
@@ -61,10 +86,12 @@
     <span class="k">high</span>
   </div>
 </figure>
-<p>A line inside a line, a square inside a square, a cube inside a cube. We can't draw the tesseract or its lamp, only what lands in our room. Read it like the other two: the blue cube is not bigger and nothing is inside it. It is the side nearest the lamp.</p>
+<p>The third picture has no lamp in it. To see why, look at the middle picture from the creature's side. Its lamp hangs above the table, which is a place the creature can't see or even point to. All that ever reaches it is the shadow. We are in the same position. The lamp that shines on the tesseract sits off in the fourth direction, outside our space, and only the shadow arrives.</p>
+<p>The lamp also accounts for the sizes. Whatever is nearer the lamp casts a bigger shadow, the way the shadow of a hand grows as it moves toward a flashlight. So the blue cube isn't really bigger than the small one, and the small one isn't inside it. The blue one is the side nearest the lamp. Raise the lamp and the two get closer in size.</p>
 
-<h2>Every piece of it is an ordinary cube</h2>
-<p class="setup">A cube's shadow has six pieces: two squares and four slanted shapes. All six are really squares. A tesseract's shadow has eight pieces: two cubes and six slanted blocks. All eight are really cubes. Step through them, and turn each one to face the lamp.</p>
+<h2>Are the slanted blocks really cubes?</h2>
+<p>The shadow of a tesseract, the 4D cube, is a small cube inside a big one with six lopsided blocks in between. Each of those six is an ordinary cube that happens to be side-on to the lamp. A book held side-on to a flashlight casts a thin sliver of a shadow for the same reason.</p>
+<p>The right-hand picture is that shadow, with one of its eight pieces in blue. Step through the pieces, and use the slider to turn the tesseract until the blue one faces the lamp. Its shadow straightens out into a plain cube. The left-hand picture does the same one level down, on the flat shadow of a cube.</p>
 <figure class="fig" id="pieces">
   <div class="ctl">
     <button class="btn" id="pieces-play" type="button" aria-pressed="false">Play</button>
@@ -76,49 +103,52 @@
     <label for="pieces-t">Turn it to face the lamp</label>
     <input type="range" id="pieces-t" min="0" max="1" step="any" value="0">
   </div>
-  <p class="out" id="pieces-out" style="min-height:3em"></p>
 </figure>
-<p>A shadow squashes whatever is side-on to the lamp. The slanted blocks are cubes seen side-on, the same way the slanted shapes on the left are squares seen side-on. Nothing about the tesseract changes when you turn it. Only its shadow does.</p>
+<p>On the left, every piece turns out to be a square. A cube has only six of them, so the last two steps mark nothing there. On the right, all eight pieces turn out to be cubes. Nothing about the tesseract changes as you turn it. Only its shadow does.</p>
 
-<h2>Laid out flat, they are eight plain cubes</h2>
-<p class="setup">A cardboard box flat-packs into six squares. A tesseract flat-packs into eight cubes. Pick a piece and find it in both pictures.</p>
-<figure class="fig" id="flat">
-  <div class="ctl" style="margin:0 0 14px">
-    <div class="seg" role="group" aria-label="Shape">
-      <button class="btn" id="flat-cube" type="button" aria-pressed="false">3D</button>
-      <button class="btn" id="flat-tess" type="button" aria-pressed="true">4D</button>
-    </div>
-    <button class="btn" id="flat-play" type="button" aria-pressed="false">Play</button>
-    <div class="step">
-      <button class="btn" id="flat-prev" type="button" aria-label="Previous piece">←</button>
-      <output id="flat-n" style="white-space:nowrap">Piece 4 of 8</output>
-      <button class="btn" id="flat-next" type="button" aria-label="Next piece">→</button>
-    </div>
+<h2>Folding, seen as projections</h2>
+<p>Six squares in a flat cross fold up into a box. The first panel shows that happening, and the second shows the shadow it casts on a sheet. The third shows the same fold one dimension up: eight cubes folding into a tesseract, as the shadow it casts in our space. Pick a piece and follow it through all three.</p>
+<figure class="fig" id="both">
+  <div class="tri">
+    <div><div class="cv"><canvas role="img" aria-label="Six squares in a cross folding up into a box"></canvas></div></div>
+    <div><div class="cv"><canvas role="img" aria-label="The flat shadow of the folding box"></canvas></div></div>
+    <div class="last"><div class="cv"><canvas role="img" aria-label="The solid shadow of eight cubes folding into a tesseract"></canvas></div></div>
   </div>
-  <p class="out" id="flat-out" style="min-height:3em"></p>
+  <div class="ctl">
+    <button class="btn" id="both-play" type="button" aria-pressed="false">Play</button>
+    <div class="step">
+      <button class="btn" id="both-prev" type="button" aria-label="Previous piece">←</button>
+      <output id="both-n" style="white-space:nowrap">Piece 8 of 8</output>
+      <button class="btn" id="both-next" type="button" aria-label="Next piece">→</button>
+    </div>
+    <span class="k">flat</span>
+    <input type="range" id="both-t" min="0" max="1" step="any" value="0" aria-label="Fold">
+    <span class="k">folded</span>
+  </div>
 </figure>
-<p>Nothing on the left is warped. Gluing the pieces back together is what takes an extra direction. A box needs "up". A tesseract needs the fourth direction, so nobody can build one in a room, and its shadow is the closest we get. These eight cubes are called its <b>cells</b>.</p>
+<p>Whichever piece is picked, it starts out as a plain cube. Folded up, the one that ends farthest from the lamp becomes the small inner cube, the one nearest it becomes the big outer cube, and the six left side-on become slanted blocks.</p>
+<p>The first panel settles what really happens to the squares: they swing upward, and none of them is squashed. The second is all that a flat creature living in the sheet would see of it. The third puts us in that creature's place, and it follows the same rules. The cubes that appear crushed are turning side-on to the lamp, and the one that appears to swell is swinging toward it.</p>
+<p>The squares that wrap a cube are called its faces. The cubes that wrap a tesseract are called its <b>cells</b>.</p>
 
-<h2>Passing through, it looks like a changing solid</h2>
-<p class="setup">The other flat picture is a slice, like one frame of a body scan. Push a cube through the tabletop and they see a flat shape that changes. Push a tesseract through our space and we see a solid that changes.</p>
+<h2>Slices</h2>
+<p>A shadow is one way to show a shape to someone with fewer dimensions, and a slice is another. Push a cube straight through a tabletop, and a flat creature living in the table would watch the cross-section, the way a medical scanner shows a body one slice at a time. It would see a flat shape appear, change and vanish. If a tesseract, the 4D cube, passed through our space, we would see a solid shape do the same. The top row shows the cube passing through the table and, beside it, the flat slice the creature sees. The bottom row shows the tesseract passing through our space and the solid slice we would see.</p>
 <figure class="fig" id="slice">
   <div class="quad">
-    <div><div class="cv"><canvas role="img" aria-label="A cube passing corner first through a flat tabletop"></canvas></div><p class="lab"><span class="tag">3D</span>A cube passing through the tabletop</p></div>
-    <div><div class="cv"><canvas role="img" aria-label="The flat cross-section of the cube"></canvas></div><p class="lab"><span class="tag">slice</span>What they see: a flat shape</p></div>
-    <div><div class="cv"><canvas role="img" aria-label="A tesseract, drawn as its shadow, passing corner first through our room"></canvas></div><p class="lab"><span class="tag">4D</span>A tesseract passing through our room</p></div>
-    <div><div class="cv"><canvas role="img" aria-label="The solid cross-section of the tesseract"></canvas></div><p class="lab"><span class="tag">slice</span>What we see: a solid shape</p></div>
+    <div><div class="cv"><canvas role="img" aria-label="A cube passing corner first through a flat tabletop"></canvas></div></div>
+    <div><div class="cv"><canvas role="img" aria-label="The flat cross-section of the cube"></canvas></div></div>
+    <div><div class="cv"><canvas role="img" aria-label="A tesseract, drawn as its shadow, passing corner first through our room"></canvas></div></div>
+    <div><div class="cv"><canvas role="img" aria-label="The solid cross-section of the tesseract"></canvas></div></div>
   </div>
   <div class="ctl">
     <button class="btn" id="slice-play" type="button" aria-pressed="false">Play</button>
     <label for="slice-t">Push through</label>
     <input type="range" id="slice-t" min="-0.93" max="0.93" step="any" value="0.2">
   </div>
-  <p class="out" id="slice-out"></p>
 </figure>
-<p>On the left, blue marks where each shape is being cut. On the right is that cut by itself. Three edges leave each corner of a cube, so it starts as a triangle. Four leave each corner of a tesseract, so it starts as a tetrahedron.</p>
+<p>Blue marks where each shape is being cut, and the panel beside it shows that cut by itself. The cube here goes through corner first, so the creature sees a small triangle that grows into a hexagon and shrinks back. We would see a small pyramid with four triangular sides, called a tetrahedron, which grows, has its corners cut off until it is an eight-faced octahedron at the halfway point, and then shrinks back.</p>
 
-<h2>Only six perfectly regular ones exist</h2>
-<p class="setup">Regular means every side is the same shape, like a die. Try fitting copies of one shape around a point. A gap means they can fold up into the next dimension. No gap means they stay flat.</p>
+<h2>It doesn't have to be cubes</h2>
+<p>A cube is not the only shape that folds up from flat pieces. To see which others do, ask why a flat cross of squares can fold at all. Lay three squares around a single corner and they don't go all the way round. There is a gap, and folding is what closes it. Lay four around a corner and there is no gap, so they sit flat like floor tiles. You can try other shapes here.</p>
 <figure class="fig" id="fit">
   <div class="seg" role="group" aria-label="Dimension" style="margin-bottom:12px">
     <button class="btn" id="fit-poly" type="button" aria-pressed="true">3D: polygons around a corner</button>
@@ -138,10 +168,11 @@
     </div>
   </div>
 </figure>
-<p>Five combinations leave a gap in 3D. Those are the Platonic solids. Six leave a gap in 4D.</p>
+<p>If you insist that every face be the same shape and every corner look the same, only five arrangements leave a gap, so only five solids can be built this way. The ancient Greeks knew all five. One of them puts three pentagons at each corner and closes up after twelve. It's called a dodecahedron.</p>
+<p>Now switch the figure to 4D. It's the same game one level up: fit solid pieces around an edge and see whether there is a gap to fold into. This time six arrangements work. One of them is three dodecahedra around each edge, and that one is the 120-cell.</p>
 
-<h2>Meet the six</h2>
-<p class="setup">Each one is the solid shadow that lands in our room, while the real shape slowly turns in 4D. One cell is marked in blue.</p>
+<h2>The 120-cell, and the other five</h2>
+<p>These are the only six perfectly regular shapes in four dimensions. Each is shown as the shadow it casts in our space while it slowly turns in 4D, with one cell, meaning one of its solid pieces, in blue.</p>
 <figure class="fig" id="six">
   <div class="seg" id="six-tabs" role="group" aria-label="Polytope"></div>
   <div class="six">
@@ -156,10 +187,12 @@
     </div>
   </div>
 </figure>
-<p>Read <code>{4,3,3}</code> left to right: squares, three per corner, make cubes. Then three cubes per edge make a tesseract.</p>
+<p>The 120-cell is 120 dodecahedra, the solid with twelve pentagon faces, joined face to face with three around every edge and folded shut in the fourth direction. Because the picture is a shadow, cells nearer the lamp come out larger, cells farther from it come out smaller, and cells side-on to it are squashed nearly flat. In the real shape all 120 are identical to the blue one.</p>
+<p>The code next to each name is a recipe. <code>{5,3,3}</code> means five-sided faces, three of them at each corner, and then three of the resulting solids around each edge. If you'd like to watch any of the six being folded up from its cells, the <a href="./">visualizer</a> does that.</p>
+<p>There is one thing here I find remarkable. Three dimensions allow five perfectly regular shapes, and four dimensions allow six. The number doesn't keep growing. In five dimensions and in every dimension beyond, there are only three.</p>
 
-<h2>When you get stuck</h2>
-<p>Lower every word by one dimension and ask what a flat creature would be confused about. It is usually the same thing, and you already know the answer.</p>
+<h2>One dimension down</h2>
+<p>There is one move that works on almost any picture of four dimensions. Take the whole situation down one dimension: imagine a flat creature living in a tabletop, looking at the shadow of an ordinary solid, and ask what it could and couldn't tell from that shadow. The same limits apply to us one level up, and from outside the table the reason for each one is visible.</p>
 </main>
 <script type="module" src="/src/explainer.js"></script>
 </body>
