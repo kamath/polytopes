@@ -2,7 +2,7 @@ body{margin:0}
 img{max-width:100%}
 [hidden]{display:none!important}
 /* Layout: one narrow reading column. It opens on a square, a cube and a tesseract, explains projecting a shape into a lower dimension, then reads the 4D shapes as projections.
-   Under each heading the prose describes the figure, so figures carry no captions and all body text is one colour. */
+   Each figure panel carries a short muted label saying what it shows and which dimensions it spans, so the figures read without the prose. */
 :root{
   --bg:#ffffff; --fg:#171717; --muted:#6b6b6b; --faint:#a1a1a1; --line:#e7e7e7; --panel:#fafafa;
   --accent:#0068d6; --c2:#c2620a; --c3:#168a4a; --c4:#c93a8e; --c5:#6b4fd8; --bad:#cf2f34;
@@ -45,7 +45,10 @@ canvas.grab:active{cursor:grabbing}
 .tag{font-family:var(--mono);font-size:11px;color:var(--fg);border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:1px 5px;margin-right:6px}
 .duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
 .tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
-.quad{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 12px;align-items:start}
+.map{display:grid;grid-template-columns:repeat(7,auto);justify-content:start;align-items:center;gap:10px 8px;font-size:14px;color:var(--muted)}
+.map b{color:var(--fg);font-weight:500;margin-right:6px}
+.map i{font-style:normal}
+.map .tag{margin:0}
 
 .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:14px}
 .ctl label,.k{font-size:13px;color:var(--muted)}

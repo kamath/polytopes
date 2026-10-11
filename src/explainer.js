@@ -1,5 +1,5 @@
 import './style.css';
-import{dot,corners,cubeEdges,quads,net,cut,ring2,cutCells,polytope}from './geometry.js';
+import{dot,corners,cubeEdges,quads,net,polytope}from './geometry.js';
 import{$,RM,K,mk,orbit,proj,paint,seg,shadow4,start}from './canvas.js';
 
 // drives a slider back and forth: plays by itself while its figure is on screen, pauses when it scrolls away,
@@ -18,9 +18,10 @@ function player(btn,inp,o){const dur=o.dur||6000,min=+inp.min,max=+inp.max;let w
   const hold=()=>{if(want){want=false;sync();}};inp.addEventListener('pointerdown',hold);inp.addEventListener('keydown',hold);
   new IntersectionObserver(es=>{vis=es[es.length-1].isIntersecting;sync();},{threshold:.3}).observe(inp.closest('.fig'));}
 
-// two linked panes on one slider: the 3D case on the left, the 4D case on the right; lab names each pane for screen readers
+// two linked panes on one slider: the 3D case on the left, the 4D case on the right
+// lab names each pane for screen readers; cap is the label printed under it, as [dimensions, text]
 function duo(el,cfg){
-  el.insertAdjacentHTML('afterbegin','<div class="duo">'+[0,1].map(i=>'<div class="cv"><canvas role="img" aria-label="'+cfg.lab[i]+'"></canvas></div>').join('')+'</div>');
+  el.insertAdjacentHTML('afterbegin','<div class="duo">'+[0,1].map(i=>'<div><div class="cv"><canvas role="img" aria-label="'+cfg.lab[i]+'"></canvas></div><p class="lab"><span class="tag">'+cfg.cap[i][0]+'</span>'+cfg.cap[i][1]+'</p></div>').join('')+'</div>');
   const cvs=el.querySelectorAll('.duo canvas'),inp=el.querySelector('input[type=range]');let S;
   const fs=[mk(cvs[0],f=>paint(f,S.l),cfg.view),mk(cvs[1],f=>paint(f,S.r))];
   if(!cfg.flat)orbit(fs[0]);orbit(fs[1]);
@@ -28,60 +29,56 @@ function duo(el,cfg){
   if(inp)inp.addEventListener('input',calc);calc();calc.fs=fs;return calc;
 }
 
-// ---------- Opening: a square, the cube built from squares, the tesseract built from cubes ----------
-// blue marks the piece from one dimension down: one face of the cube, one cell of the tesseract
+// ---------- Shared by the 4D shadow figures ----------
 const topes={},tope=k=>topes[k]||(topes[k]=polytope(k));
 // a slow double turn in 4D: A mixes x with w, B mixes y with z
 const spin4=(A,B)=>{const ca=Math.cos(A),sa=Math.sin(A),cb=Math.cos(B),sb=Math.sin(B);return v=>[v[0]*ca-v[3]*sa,v[1]*cb-v[2]*sb,v[1]*sb+v[2]*cb,v[0]*sa+v[3]*ca];};
-(()=>{
-  const btn=$('#hero-play'),cvs=document.querySelectorAll('#hero canvas'),P=tope(8),C=new Set(P.cells[0]),hi=P.E.filter(e=>C.has(e[0])&&C.has(e[1])).map(e=>[e[0],e[1],0]);
-  const cube={P:corners(3),E:cubeEdges(3).map(e=>[e[0],e[1],e[0]&e[1]&1]),F:[{i:[1,3,7,5],a:.16}],R:2.1};
-  let play=!RM,ang=0,A=.7,B=.35;
-  const dt=(f,ts)=>{const d=play?Math.min(50,ts-(f.last||ts)):0;f.last=ts;return d;};
-  const fs=[mk(cvs[0],(f,ts)=>{ang+=dt(f,ts)*.0003;const P=[0,1,2,3].map(i=>{const a=ang+Math.PI/4+i*Math.PI/2;return[Math.cos(a),Math.sin(a)];});
-      paint(f,{flat:true,P,E:P.map((_,i)=>[i,(i+1)%4,1]),F:[{i:[0,1,2,3],a:.16}],R:1.3});}),
-    mk(cvs[1],(f,ts)=>{f.yaw+=dt(f,ts)*.0004;paint(f,cube);}),
-    mk(cvs[2],(f,ts)=>{const d=dt(f,ts);A+=d*.00022;B+=d*.00009;shadow4(f,P,spin4(A,B),hi,null);},{R:1.3,yaw:.4,pitch:.3})];
-  orbit(fs[1]);orbit(fs[2]);
-  const sync=()=>{btn.textContent=play?'Pause':'Play';btn.setAttribute('aria-pressed',play?'true':'false');fs.forEach(f=>{f.anim=play;f.last=0;f.dirty=true;});};
-  btn.addEventListener('click',()=>{play=!play;sync();});sync();
-})();
 
 // ---------- Projection: a solid cube between a lamp and a sheet, and the shadow that lands on the sheet ----------
 // the cube is drawn as a block: only the faces turned to the viewer, brighter where the lamp reaches them
-// the shadow is one dark outline, the hull of where the corners land, and a ray runs to each corner of that outline
+// the shadow is one dark patch, the hull of where the corners land, and a ray runs to each corner of that outline
 (()=>{
-  const el=$('#proj'),inp=$('#proj-t'),cvs=el.querySelectorAll('canvas'),H=8,T=3.4,L=[0,H,0],O=[0,1.9,0],FC=quads(3).map(r=>({r}));
-  let V,S,hull;
+  const H=8,T=3.4,L=[0,H,0],O=[0,1.9,0],QD=quads(3);
   const sub=(a,b)=>a.map((x,i)=>x-b[i]),area=(Q,r)=>{let a=0;r.forEach((i,k)=>{const j=r[(k+1)%r.length];a+=Q[i][0]*Q[j][1]-Q[j][0]*Q[i][1];});return a;};
+  const dark=()=>parseInt(K.bg.slice(1,3),16)<128;
   const ring=(c,Q,r)=>{c.beginPath();r.forEach((i,k)=>k?c.lineTo(Q[i][0],Q[i][1]):c.moveTo(Q[i][0],Q[i][1]));c.closePath();};
-  const face=(c,Q,r,F)=>{const dk=parseInt(K.bg.slice(1,3),16)<128;ring(c,Q,r);
+  const face=(c,Q,F)=>{const dk=dark();ring(c,Q,F.r);
     c.globalAlpha=1;c.fillStyle=K.bg;c.fill();c.globalAlpha=dk?.07+.3*F.lit:.32-.28*F.lit;c.fillStyle=K.fg;c.fill();
     c.globalAlpha=.7;c.strokeStyle=K.fg;c.lineWidth=1.1;c.stroke();c.globalAlpha=1;};
   // a lit sheet with the shadow cut out of it: o is where the shadow's corners start in Q
-  const sheet=(c,Q,r,o)=>{const dk=parseInt(K.bg.slice(1,3),16)<128;ring(c,Q,r);c.globalAlpha=dk?.2:.04;c.fillStyle=K.fg;c.fill();c.globalAlpha=.25;c.strokeStyle=K.fg;c.lineWidth=1;c.stroke();
+  const sheet=(c,Q,r,o,hull)=>{const dk=dark();ring(c,Q,r);c.globalAlpha=dk?.2:.04;c.fillStyle=K.fg;c.fill();c.globalAlpha=.25;c.strokeStyle=K.fg;c.lineWidth=1;c.stroke();
     ring(c,Q,hull.map(i=>i+o));c.globalAlpha=1;c.fillStyle=K.bg;c.fill();if(!dk){c.globalAlpha=.45;c.fillStyle=K.fg;c.fill();}c.globalAlpha=1;};
-  const fs=[mk(cvs[0],f=>{const c=f.ctx,Q=proj(f,[...V,...S,[-T,0,-T],[T,0,-T],[T,0,T],[-T,0,T],L]),lp=Q[20];c.lineJoin=c.lineCap='round';
-      sheet(c,Q,[16,17,18,19],8);
-      c.beginPath();hull.forEach(i=>{c.moveTo(lp[0],lp[1]);c.lineTo(Q[i+8][0],Q[i+8][1]);});c.globalAlpha=.4;c.strokeStyle=K.c2;c.lineWidth=1;c.stroke();c.globalAlpha=1;
-      FC.filter(F=>area(Q,F.r)*F.o<0).forEach(F=>face(c,Q,F.r,F));
-      c.fillStyle=K.c2;c.beginPath();c.arc(lp[0],lp[1],5,0,7);c.fill();
-      c.fillStyle=K.muted;c.font='12px Geist, system-ui, sans-serif';c.textAlign='left';c.textBaseline='middle';c.fillText('lamp',lp[0]+10,lp[1]);},{yaw:.6,pitch:.3,R:5,C:[0,3.4,0]}),
-    mk(cvs[1],f=>{const c=f.ctx,Q=proj(f,[...S.map(p=>[p[0],p[2]]),[-T,-T],[T,-T],[T,T],[-T,T]],true);c.lineJoin='round';
-      sheet(c,Q,[8,9,10,11],0);},{R:T*1.2})];
-  orbit(fs[0]);
-  const calc=()=>{const t=+inp.value,a=t*.785,b=t*.955,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);
-    V=corners(3).map(v=>{const x=v[0]*ca+v[2]*sa,z=-v[0]*sa+v[2]*ca;return[x,O[1]+v[1]*cb-z*sb,v[1]*sb+z*cb];});
-    S=V.map(p=>{const k=H/(H-p[1]);return[p[0]*k,0,p[2]*k];});
+  const rays=(c,lp,ends)=>{c.beginPath();for(const p of ends){c.moveTo(lp[0],lp[1]);c.lineTo(p[0],p[1]);}c.globalAlpha=.4;c.strokeStyle=K.c2;c.lineWidth=1;c.stroke();c.globalAlpha=1;};
+  const lamp=(c,lp)=>{c.fillStyle=K.c2;c.beginPath();c.arc(lp[0],lp[1],5,0,7);c.fill();
+    c.fillStyle=K.muted;c.font='12px Geist, system-ui, sans-serif';c.textAlign='left';c.textBaseline='middle';c.fillText('lamp',lp[0]+10,lp[1]);};
+  // the cube turned by t: its corners V, its faces FC, where the corners land on the sheet S, and the outline of the shadow
+  const turn=t=>{const a=t*.785,b=t*.955,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b),
+      V=corners(3).map(v=>{const x=v[0]*ca+v[2]*sa,z=-v[0]*sa+v[2]*ca;return[x,O[1]+v[1]*cb-z*sb,v[1]*sb+z*cb];}),
+      S=V.map(p=>{const k=H/(H-p[1]);return[p[0]*k,0,p[2]*k];});
     // the outline of the shadow: the convex hull of the eight corners where they land
     const id=S.map((_,i)=>i).sort((a,b)=>S[a][0]-S[b][0]||S[a][2]-S[b][2]),cr=(o,a,b)=>(S[a][0]-S[o][0])*(S[b][2]-S[o][2])-(S[a][2]-S[o][2])*(S[b][0]-S[o][0]),
       half=ids=>{const h=[];for(const i of ids){while(h.length>1&&cr(h[h.length-2],h[h.length-1],i)<=1e-9)h.pop();h.push(i);}h.pop();return h;};
-    hull=[...half(id),...half(id.slice().reverse())];
     // n points out of the face, o says which way round its ring runs, lit is how squarely the lamp hits it
-    FC.forEach(F=>{const r=F.r,c=[0,1,2].map(d=>r.reduce((s,i)=>s+V[i][d],0)/4),n=sub(c,O),u=sub(V[r[1]],V[r[0]]),w=sub(V[r[2]],V[r[1]]),l=sub(L,c);
-      F.o=Math.sign(dot([u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]],n));F.lit=Math.max(0,dot(l,n)/Math.hypot(...l));});
-    fs.forEach(f=>f.dirty=true);};
-  inp.addEventListener('input',calc);calc();player($('#proj-play'),inp,{dur:6000});
+    const FC=QD.map(r=>{const c=[0,1,2].map(d=>r.reduce((s,i)=>s+V[i][d],0)/4),n=sub(c,O),u=sub(V[r[1]],V[r[0]]),w=sub(V[r[2]],V[r[1]]),l=sub(L,c);
+      return{r,o:Math.sign(dot([u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]],n)),lit:Math.max(0,dot(l,n)/Math.hypot(...l))};});
+    return{V,S,FC,hull:[...half(id),...half(id.slice().reverse())]};};
+  // a figure of two panes on one slider that turns the cube: a and b are each [draw(f,st), framing]
+  const two=(id,a,b)=>{const inp=$('#'+id+'-t'),cvs=$('#'+id).querySelectorAll('canvas');let st;
+    const fs=[mk(cvs[0],f=>a[0](f,st),a[1]),mk(cvs[1],f=>b[0](f,st),b[1])];
+    const calc=()=>{st=turn(+inp.value);fs.forEach(f=>f.dirty=true);};
+    inp.addEventListener('input',calc);calc();player($('#'+id+'-play'),inp,{dur:6000});return fs;};
+  // 3D to 2D: the cube, the lamp and the sheet from the side, then the sheet from above
+  orbit(two('proj',[(f,st)=>{const c=f.ctx,Q=proj(f,[...st.V,...st.S,[-T,0,-T],[T,0,-T],[T,0,T],[-T,0,T],L]),lp=Q[20];c.lineJoin=c.lineCap='round';
+      sheet(c,Q,[16,17,18,19],8,st.hull);rays(c,lp,st.hull.map(i=>Q[i+8]));st.FC.filter(F=>area(Q,F.r)*F.o<0).forEach(F=>face(c,Q,F));lamp(c,lp);},{yaw:.6,pitch:.3,R:5,C:[0,3.4,0]}],
+    [(f,st)=>{const c=f.ctx,Q=proj(f,[...st.S.map(p=>[p[0],p[2]]),[-T,-T],[T,-T],[T,T],[-T,T]],true);c.lineJoin='round';sheet(c,Q,[8,9,10,11],0,st.hull);},{R:T*1.2}])[0]);
+  // 2D to 1D: a second lamp lies on the sheet, and the flat shadow lands on the sheet's bottom edge as a bar; then that edge by itself
+  const HL=6,G=3.6,W=4.2,R=5.6;
+  const edge=st=>{const A=st.S.map(p=>[p[0],p[2]]),x=A.map(p=>p[0]*(G+HL)/(p[1]+HL));return{A,lo:Math.min(...x),hi:Math.max(...x)};};
+  const bar=(c,p,q)=>{c.strokeStyle=K.fg;c.lineWidth=3.2;c.beginPath();c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);c.stroke();};
+  two('flat',[(f,st)=>{const c=f.ctx,e=edge(st),Q=proj(f,[...e.A,[-W,-HL-.7],[W,-HL-.7],[W,G],[-W,G],[0,-HL],[e.lo,G],[e.hi,G]],true),lp=Q[12];c.lineJoin=c.lineCap='round';
+      sheet(c,Q,[8,9,10,11],0,st.hull);rays(c,lp,[Q[13],Q[14]]);bar(c,Q[13],Q[14]);lamp(c,lp);},{R,C:[0,(G-HL-.7)/2,0]}],
+    [(f,st)=>{const c=f.ctx,e=edge(st),Q=proj(f,[[-W,0],[W,0],[e.lo,0],[e.hi,0]],true);c.lineCap='round';
+      c.globalAlpha=.25;c.strokeStyle=K.fg;c.lineWidth=1;c.beginPath();c.moveTo(Q[0][0],Q[0][1]);c.lineTo(Q[1][0],Q[1][1]);c.stroke();c.globalAlpha=1;bar(c,Q[2],Q[3]);},{R}]);
 })();
 
 // ---------- Projection, one dimension up: the tesseract turns in 4D and only its solid shadow can be drawn ----------
@@ -166,7 +163,7 @@ function lampScene(H){const T=3.1,top=2,P=corners(3).map(v=>[v[0],2+v[1],v[2]]);
 
 // ---------- Pieces: pick one side, turn it to face the lamp ----------
 (()=>{
-  const D=5,nOut=$('#pieces-n'),inp=$('#pieces-t');let idx=2;
+  const D=5,inp=$('#pieces-t');let idx=2;
   // sides of the n-cube as [axis, sign]: nearest the lamp, farthest, then the ones side-on to it
   const sides=n=>{const L=[[n-1,1],[n-1,-1]];for(let a=0;a<n-1;a++)L.push([a,1],[a,-1]);return L;};
   const emb=(l,a,b)=>(l&((1<<a)-1))|(b<<a)|((l>>a)<<(a+1));
@@ -177,44 +174,24 @@ function lampScene(H){const T=3.1,top=2,P=corners(3).map(v=>[v[0],2+v[1],v[2]]);
       E.forEach(e=>{if((e[0]>>a&1)==bit&&(e[1]>>a&1)==bit)e[2]=1;});
       F=quads(n-1).map(q=>({i:q.map(l=>emb(l,a,bit)),a:n==3?.18:.08}));}
     return{V,E,F};};
-  const calc=duo($('#pieces'),{lab:['The flat shadow of a cube, with one piece marked','The solid shadow of a tesseract, with one piece marked'],flat:true,
+  const calc=duo($('#pieces'),{lab:['The flat shadow of a cube, with one piece marked','The solid shadow of a tesseract, with one piece marked'],cap:[['3D → 2D','A cube\'s shadow, one square marked'],['4D → 3D','A tesseract\'s shadow, one cube marked']],flat:true,
     scene:u=>{const A=make(3,u),B=make(4,u);
       return{l:{P:A.V.map(p=>{const k=D/(D-1-p[2]);return[p[0]*k,p[1]*k];}),E:A.E,F:A.F,R:2.9,flat:true},
         r:{P:B.V.map(p=>{const k=D/(D-1-p[3]);return[p[0]*k,-p[1]*k,p[2]*k];}),E:B.E,F:B.F,R:3.5}};}});
-  const go=d=>{idx=(idx+d+8)%8;inp.value=0;nOut.textContent='Piece '+(idx+1)+' of 8';calc();};
-  $('#pieces-prev').addEventListener('click',()=>go(-1));$('#pieces-next').addEventListener('click',()=>go(1));
+  // the choice is a kind of piece, not one of eight, so the cube and the tesseract always have a matching one marked
+  seg([...$('#pieces-kind').querySelectorAll('button')],b=>{idx=+b.dataset.i;inp.value=0;calc();});
   player($('#pieces-play'),inp,{dur:3200});
 })();
 
 // ---------- Folding: the box itself, its shadow on a sheet, and the shadow of the same fold one dimension up ----------
 (()=>{
-  const el=$('#both'),inp=$('#both-t'),nOut=$('#both-n'),cvs=el.querySelectorAll('canvas'),S=[];let idx=7;
+  const el=$('#both'),inp=$('#both-t'),cvs=el.querySelectorAll('canvas'),S=[];let kind=2;
   const fs=[mk(cvs[0],f=>paint(f,S[0]),{yaw:1.02,pitch:.5}),mk(cvs[1],f=>paint(f,S[1])),mk(cvs[2],f=>paint(f,S[2]))];orbit(fs[0]);orbit(fs[2]);
-  // the tesseract's net has two more side pieces than the box's, so pieces 6 and 7 have no partner in the first two panes
-  const calc=()=>{const u=+inp.value,j=idx==7?5:idx<5?idx:-1,N=net(2,u*Math.PI/2);
+  // the marked piece is a kind (base, a side, the lid), so the box and the tesseract always have a matching one marked
+  const calc=()=>{const u=+inp.value,j=[0,1,5][kind],idx=[0,1,7][kind],N=net(2,u*Math.PI/2);
     S[0]={...piece(N,2,j),P:N.P.map(p=>[p[0],p[2],p[1]]),R:3.9,C:[0,.9,.9]};S[1]=netShadow(2,u,j);S[2]=netShadow(3,u,idx);fs.forEach(f=>f.dirty=true);};
-  const go=d=>{idx=(idx+d+8)%8;nOut.textContent='Piece '+(idx+1)+' of 8';calc();};
-  $('#both-prev').addEventListener('click',()=>go(-1));$('#both-next').addEventListener('click',()=>go(1));
+  seg([...$('#both-kind').querySelectorAll('button')],b=>{kind=+b.dataset.i;calc();});
   inp.addEventListener('input',calc);calc();player($('#both-play'),inp,{dur:7000});
-})();
-
-// ---------- Slice ----------
-(()=>{
-  // 2x2: the cube and its flat slice on top, the tesseract (as its shadow) and its solid slice below
-  const el=$('#slice'),inp=$('#slice-t'),cvs=el.querySelectorAll('.quad canvas'),S=[],D=5;
-  const fs=[0,1,2,3].map(i=>mk(cvs[i],f=>paint(f,S[i])));[0,2,3].forEach(i=>orbit(fs[i]));
-  const sh=p=>{const k=D/(D-1-p[3]);return[p[0]*k,-p[1]*k,p[2]*k];};
-  const calc=()=>{const t=+inp.value;
-    const A=cut(3,t),poly=A.X.length?ring2(A.X.map(x=>x.q)):[],cube=A.V.map(v=>[dot(v,A.B[0]),dot(v,A.nv),dot(v,A.B[1])]);
-    S[0]={P:[...cube,...poly.map(q=>[q[0],A.L,q[1]])],E:cubeEdges(3),F:poly.length?[{i:poly.map((_,i)=>8+i),a:.22,s:true}]:[],R:1.95};
-    S[1]={flat:true,P:poly,F:poly.length?[{i:poly.map((_,i)=>i),a:.14,s:true}]:[],R:1.75};
-    const C=cut(4,t),P=[],F=[],T=C.V.map(sh),FT=[];
-    cutCells(C).forEach(r=>{F.push({i:r.map((_,i)=>P.length+i),a:.07,s:true});FT.push({i:r.map((_,i)=>T.length+i),a:.1,s:true});r.forEach(q=>{P.push(q);T.push(sh(q.p));});});
-    S[2]={P:T,E:cubeEdges(4),F:FT,R:3.5};
-    S[3]={P,F,R:2.25};
-    fs.forEach(f=>f.dirty=true);};
-  inp.addEventListener('input',calc);calc();
-  player($('#slice-play'),inp,{dur:7000});
 })();
 
 // ---------- Only six ----------
